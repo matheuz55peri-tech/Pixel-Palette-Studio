@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.3.0';
+  const CURRENT_VERSION = '2.3.1';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -64,10 +64,18 @@
     if (node) { node.textContent = text; node.style.color = error ? '#ff8d95' : '#9dedbf'; }
     if (error && typeof Blockbench !== 'undefined' && Blockbench.showQuickMessage) Blockbench.showQuickMessage(text, 3500);
   }
+  function resolveTexture() {
+    if (typeof Texture === 'undefined') return null;
+    const list = Array.isArray(Texture.all) ? Texture.all : [];
+    const found = activeTexture && list.includes(activeTexture) ? activeTexture : null;
+    if (found) return found;
+    if (Texture.selected && list.includes(Texture.selected)) return Texture.selected;
+    return list.find(t => t && t.selected) || list.find(t => t && t.visible !== false) || list[0] || null;
+  }
   function getSource() {
-    const tex = (activeTexture && typeof Texture !== 'undefined' && Texture.all.includes(activeTexture)) ? activeTexture : (typeof Texture !== 'undefined' ? Texture.selected : null);
-    const width = tex ? Number(tex.getUVWidth ? tex.getUVWidth() : tex.uv_width || tex.width) : clamp(+($('width').value || 16), 1, 128);
-    const height = tex ? Number(tex.getUVHeight ? tex.getUVHeight() : tex.uv_height || tex.height) : clamp(+($('height').value || 16), 1, 128);
+    const tex = resolveTexture();
+    const width = tex ? Number(tex.uv_width || tex.width || 16) : clamp(Number($('width')?.value || 16), 1, 128);
+    const height = tex ? Number(tex.uv_height || (tex.frameCount > 1 ? Math.round(tex.height / tex.frameCount) : tex.height) || 16) : clamp(Number($('height')?.value || 16), 1, 128);
     const w = Math.round(width), h = Math.round(height);
     if (!w || !h || w > 512 || h > 512) throw new Error('Tamanho inválido da textura.');
     const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -94,7 +102,7 @@
       mask: $('mask').value, easing: $('ease').value,
       loop: $('loop').checked, shade: $('shade').checked,
       preset: $('preset').value, intensity: Number($('intensity').value)/100,
-      band: Number($('band').value), angle: Number($('angle').value)/100,
+      band: Number($('band').value), angle: Number($('angle')?.value ?? 30)/100,
       glow: color($('glow').value), coverage: $('coverage').value,
       reverse: $('reverse').checked
     };
@@ -173,7 +181,7 @@
   }
   function launch(preset = 'vertical', texture = null) {
     stop();
-    activeTexture = texture || (typeof Texture !== 'undefined' ? Texture.selected : null);
+    activeTexture = texture && typeof Texture !== 'undefined' && Texture.all?.includes(texture) ? texture : resolveTexture();
     const presetNames = ['vertical','diagonal','horizontal','pulse','sparkle','edge','palette'];
     if (!presetNames.includes(preset)) preset = 'vertical';
     const html = `
@@ -247,9 +255,9 @@
           <div class="field"><label for="ppf_ease">Suavidade da transição</label><select id="ppf_ease"><option value="smooth">Suave · acelera e desacelera</option><option value="linear">Linear · constante</option><option value="sine">Senoidal · macia</option></select></div>
           <label class="check"><input type="checkbox" id="ppf_loop" checked> Loop suave (vai e volta sem salto)</label>
           <label class="check"><input type="checkbox" id="ppf_shade" checked> Preservar relevo e diferenças de tons</label>
-          <div class="heading" style="margin-top:16px">04 / Sem textura selecionada</div>
+          <div class="heading" style="margin-top:16px">04 / Origem da textura</div>
           <div class="twocol"><div class="field"><label for="ppf_width">Largura</label><input id="ppf_width" type="number" min="1" max="128" value="16"></div><div class="field"><label for="ppf_height">Altura</label><input id="ppf_height" type="number" min="1" max="128" value="16"></div></div>
-          <span class="hint">Se houver uma textura selecionada no Blockbench, ela será usada automaticamente. A original não será alterada.</span>
+          <span class="hint">Usa a textura escolhida em IMAGES ou a primeira textura disponível. A original não será alterada.</span>
         </section>
         <section class="panel">
           <div class="heading">Pré-visualização animada</div>
@@ -336,7 +344,7 @@
     generate();
   }
   Plugin.register(PLUGIN_ID, {
-    title: 'Pixel Palette Studio — Flipbook FX 2.3',
+    title: 'Pixel Palette Studio — Flipbook FX 2.3.1',
     author: 'OpenAI',
     icon: 'auto_awesome',
     description: 'Presets de reflexos metálicos, brilho vertical, faíscas, paleta e prévia em flipbook.',
