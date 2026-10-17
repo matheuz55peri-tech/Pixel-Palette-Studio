@@ -1,5 +1,5 @@
 {
-  "version": "2.9.5",
+  "version": "2.9.6",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "Bolhas redesenhadas em pixel art: contornos arredondados translúcidos, reflexos brilhantes e tamanhos variados nos presets Bolhas e Bolhas em coluna."
+  "notes": "Corrige leitura do manifesto pelo verificador de atualizações do GitHub. Preserva os presets e bolhas da v2.9.5."
 }
