@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.6.4';
+  const CURRENT_VERSION = '2.6.5';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -104,7 +104,7 @@
     return {
       a: color($('base').value), b: color($('target').value),
       frames: clamp(Math.round(Number($('frames').value) || 16), 2, 128),
-      fps: clamp(Number($('fps').value) || 8, 1, 20),
+      fps: clamp(Number($('fps').value) || 8, 0.1, 20),
       tolerance: clamp(Number($('tolerance').value) || 0, 0, 255),
       mask: $('mask').value, easing: $('ease').value,
       loop: $('loop').checked, shade: $('shade').checked,
@@ -337,7 +337,7 @@
           <div class="field"><label for="ppf_tolerance">Tolerância de cor: <b id="ppf_toltext">75</b></label><input type="range" id="ppf_tolerance" min="0" max="255" value="75"><span class="hint">Aumente para incluir sombras e variações próximas.</span></div>
           <div class="twocol">
             <div class="field"><label for="ppf_frames">Quantidade de frames</label><input id="ppf_frames" type="number" min="2" max="128" value="16"></div>
-            <div class="field"><label for="ppf_fps">Prévia (FPS)</label><input id="ppf_fps" type="number" min="1" max="20" value="8"></div>
+            <div class="field"><label for="ppf_fps">Velocidade (FPS)</label><input id="ppf_fps" type="number" min="0.1" max="20" step="0.1" value="4"><span class="hint">0,1 FPS = 1 frame a cada 10 s. Minecraft: 20 ticks = 1 s.</span></div>
           </div>
           <div class="field"><label for="ppf_ease">Suavidade da transição</label><select id="ppf_ease"><option value="smooth">Suave · acelera e desacelera</option><option value="linear">Linear · constante</option><option value="sine">Senoidal · macia</option></select></div>
           <label class="check"><input type="checkbox" id="ppf_loop" checked> Loop suave (vai e volta sem salto)</label>
@@ -470,15 +470,18 @@
           const ctx=canvas.getContext('2d');
           ctx.putImageData(new ImageData(result,lw,lh),0,0);
         },{method:'canvas',edit_name:'Pixel Palette Studio: efeitos na camada ativa'});
+        // Minecraft uses 20 ticks/second. Frame count/UV stay unchanged, only playback timing changes.
+        const ticks = Math.max(1,Math.round(20/settings.fps));
+        tex.frame_time=ticks;
         if(typeof tex.select==='function')tex.select();
         activeTexture=tex;
-        message('Aplicado na camada ativa: '+changed+' pixel(s). Resolução, transparência e camadas preservadas.');
+        message('Aplicado na camada ativa: '+changed+' pixel(s). Velocidade: '+ticks+' ticks/frame (~'+(20/ticks).toFixed(2)+' FPS).');
       }catch(e){message('Falha ao aplicar: '+(e.message||e),true);}
     });
     generate();
   }
   Plugin.register(PLUGIN_ID, {
-    title: 'Pixel Palette Studio — Flipbook FX 2.6.4',
+    title: 'Pixel Palette Studio — Flipbook FX 2.6.5',
     author: 'OpenAI',
     icon: 'auto_awesome',
     description: 'Presets de reflexos metálicos, brilho vertical, faíscas, paleta e prévia em flipbook.',
