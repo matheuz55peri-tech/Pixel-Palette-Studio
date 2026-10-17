@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.9.0';
+  const CURRENT_VERSION = '2.9.1';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -583,7 +583,6 @@
             for(let yy=0;yy<h;yy+=2)dot(xx+Math.sin(tau*t+yy*.08)*cfg.size,((yy+Math.floor(t*h))%h)+oy,i%3? a:b,1);
           }
         }
-      }
 
       // Pixel-art fire uses 3 separately drawn ramps, tapering flame tongues,
       // rhythmic silhouette motion and sparks. No opaque background.
@@ -631,6 +630,7 @@
           dot(sx,sy+oy,p%3?palette[2]:palette[3],1);
         }
       }
+      }
       output=out;frame=Math.min(frame,n-1);el('seek').max=n-1;
       show();
     }
@@ -662,7 +662,7 @@
   }
 
   Plugin.register(PLUGIN_ID, {
-    title: 'Pixel Palette Studio — Flipbook FX 2.9.0',
+    title: 'Pixel Palette Studio — Flipbook FX 2.9.1',
     author: 'OpenAI',
     icon: 'auto_awesome',
     description: 'Presets de reflexos metálicos, brilho vertical, faíscas, paleta e prévia em flipbook.',
