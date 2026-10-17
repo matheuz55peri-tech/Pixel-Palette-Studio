@@ -1,5 +1,5 @@
 {
-  "version": "2.6.3",
+  "version": "2.6.4",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "Corrige aplicação sem efeito: edita pixels na própria textura via API Texture.edit, registra desfazer e avisa quando máscara não altera nenhum pixel. Mantém o tamanho e frames originais."
+  "notes": "Corrige erro de textura com camadas: efeitos aplicados na camada ativa sem mesclar, mantendo a transparência, resolução e frames."
 }
