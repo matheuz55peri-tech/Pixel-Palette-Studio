@@ -1,5 +1,5 @@
 {
-  "version": "2.9.4",
+  "version": "2.9.5",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "Slider HUE único para recolorir chamas do Gerador transparente e novo preset Bolhas em coluna, mantendo as outras funções."
+  "notes": "Bolhas redesenhadas em pixel art: contornos arredondados translúcidos, reflexos brilhantes e tamanhos variados nos presets Bolhas e Bolhas em coluna."
 }
