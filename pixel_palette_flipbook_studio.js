@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.6.3';
+  const CURRENT_VERSION = '2.6.4';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -422,50 +422,63 @@
       } catch(e) {message('Erro no download: '+e.message,true);}
     });
     $('create').addEventListener('click', () => {
-      if (!strip || !src || !src.texture) return message('Selecione uma textura existente antes de aplicar.', true);
+      if (!strip || !src || !src.texture) return message('Selecione uma textura antes de aplicar.',true);
       try {
-        const tex = src.texture;
-        if (!Texture.all.includes(tex)) throw Error('A textura selecionada foi removida.');
-        const original = tex.canvas && tex.canvas.width ? tex.canvas : tex.img;
-        if (!original || original.width !== strip.width || original.height !== strip.height) {
-          throw Error('A resolução da textura mudou. Reabra o estúdio.');
-        }
-        if (settings.frames !== src.inputFrames) throw Error('A quantidade de frames deve permanecer igual.');
-        if (tex.layers_enabled) {
-          throw Error('Esta textura usa camadas. Mescle/desative as camadas ou edite uma cópia para evitar sobrescrever a composição.');
-        }
-        if (typeof tex.edit !== 'function') throw Error('Este Blockbench não oferece edição de textura pelo plugin.');
-        // Detect a no-op before editing: color mask or intensity may exclude all pixels.
-        const finalCtx = strip.getContext('2d', {willReadFrequently: true});
-        const finalPixels = finalCtx.getImageData(0, 0, strip.width, strip.height).data;
-        let changed = 0;
-        for (let n = 0; n < src.inputFrames; n++) {
-          const oldFrame = src.pixelsByFrame[n];
-          const offset = n * src.w * src.h * 4;
-          for (let p = 0; p < oldFrame.length; p += 4) {
-            if (oldFrame[p] !== finalPixels[offset+p] ||
-                oldFrame[p+1] !== finalPixels[offset+p+1] ||
-                oldFrame[p+2] !== finalPixels[offset+p+2]) changed++;
+        const tex=src.texture;
+        if (!Texture.all.includes(tex)) throw Error('A textura original não está disponível.');
+        const img=tex.canvas?.width ? tex.canvas : tex.img;
+        if (!img || img.width!==strip.width || img.height!==strip.height) throw Error('Tamanho diferente da textura. Reabra o estúdio.');
+        if (settings.frames!==src.inputFrames) throw Error('A quantidade de frames não pode mudar.');
+        if (typeof tex.edit!=='function') throw Error('A edição de textura não está disponível nesta versão do Blockbench.');
+        const intended=strip.getContext('2d',{willReadFrequently:true}).getImageData(0,0,strip.width,strip.height).data;
+        const source=src.pixelsByFrame;
+        let changed=0;
+        // Use the active layer rather than flattening layers. Preserve each painted pixel's alpha.
+        const editingLayer=tex.layers_enabled ? tex.getActiveCanvas?.() : tex;
+        if (!editingLayer?.canvas?.width) throw Error('Não consegui identificar a camada ativa.');
+        const baseCanvas=editingLayer.canvas;
+        const off=tex.layers_enabled && Array.isArray(editingLayer.offset) ? editingLayer.offset : [0,0];
+        const ox=Math.round(Number(off[0])||0),oy=Math.round(Number(off[1])||0);
+        const lc=baseCanvas.getContext('2d',{willReadFrequently:true});
+        const sourceLayer=lc.getImageData(0,0,baseCanvas.width,baseCanvas.height).data;
+        const fw=strip.width,fh=strip.height,lw=baseCanvas.width,lh=baseCanvas.height;
+        // Calculate the minimal RGB changes for painted pixels on the selected layer only.
+        const result=new Uint8ClampedArray(sourceLayer);
+        for(let y=0;y<lh;y++)for(let x=0;x<lw;x++){
+          const gx=x+ox,gy=y+oy;
+          if(gx<0||gy<0||gx>=fw||gy>=fh)continue;
+          const lp=(y*lw+x)*4,gp=(gy*fw+gx)*4;
+          if(!sourceLayer[lp+3])continue;
+          const frameIndex=Math.floor(gy/src.h);
+          const framePixel=(gy%src.h)*src.w+gx;
+          const orig=source[frameIndex];
+          if(!orig)continue;
+          const op=framePixel*4;
+          if(!orig[op+3])continue;
+          let modified=false;
+          for(let k=0;k<3;k++){
+            const delta=intended[gp+k]-orig[op+k];
+            const next=clamp(sourceLayer[lp+k]+delta,0,255);
+            if(next!==sourceLayer[lp+k])modified=true;
+            result[lp+k]=next;
           }
+          if(modified)changed++;
         }
-        if (!changed) throw Error('Nenhum pixel mudou. Ajuste Aplicar em para Toda parte visível, aumente a tolerância ou mude a intensidade do efeito.');
-        tex.edit(canvas => {
-          if (!canvas || typeof canvas.getContext !== 'function') throw Error('Canvas de edição indisponível.');
-          if (canvas.width !== strip.width || canvas.height !== strip.height) throw Error('A área de edição não tem as dimensões esperadas.');
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = false;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(strip, 0, 0);
-        }, {method:'canvas', edit_name:'Pixel Palette Studio · Aplicar efeitos'});
-        if (typeof tex.select === 'function') tex.select();
-        activeTexture = tex;
-        message('Aplicado: '+changed+' pixel(s) modificados em '+tex.name+'. Mesma resolução e frames. Salve a textura.');
-      } catch (e) {message('Falha ao aplicar: ' + (e.message || e), true);}
+        if(!changed)throw Error('Nenhum pixel pintado da camada ativa foi alterado. Selecione a camada com o desenho e use Aplicar em: Toda parte visível.');
+        tex.edit(canvas=>{
+          if(!canvas || canvas.width!==lw || canvas.height!==lh)throw Error('A camada de edição mudou. Reabra o estúdio.');
+          const ctx=canvas.getContext('2d');
+          ctx.putImageData(new ImageData(result,lw,lh),0,0);
+        },{method:'canvas',edit_name:'Pixel Palette Studio: efeitos na camada ativa'});
+        if(typeof tex.select==='function')tex.select();
+        activeTexture=tex;
+        message('Aplicado na camada ativa: '+changed+' pixel(s). Resolução, transparência e camadas preservadas.');
+      }catch(e){message('Falha ao aplicar: '+(e.message||e),true);}
     });
     generate();
   }
   Plugin.register(PLUGIN_ID, {
-    title: 'Pixel Palette Studio — Flipbook FX 2.6.3',
+    title: 'Pixel Palette Studio — Flipbook FX 2.6.4',
     author: 'OpenAI',
     icon: 'auto_awesome',
     description: 'Presets de reflexos metálicos, brilho vertical, faíscas, paleta e prévia em flipbook.',
