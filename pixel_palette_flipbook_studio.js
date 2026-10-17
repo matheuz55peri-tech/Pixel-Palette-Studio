@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.6.2';
+  const CURRENT_VERSION = '2.6.3';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -422,24 +422,50 @@
       } catch(e) {message('Erro no download: '+e.message,true);}
     });
     $('create').addEventListener('click', () => {
-      if(!strip||!src||!src.texture)return message('Selecione uma textura existente antes de aplicar.',true);
+      if (!strip || !src || !src.texture) return message('Selecione uma textura existente antes de aplicar.', true);
       try {
-        const tex=src.texture;
-        if(!Texture.all.includes(tex))throw Error('A textura selecionada foi removida.');
-        const img=tex.canvas&&tex.canvas.width?tex.canvas:tex.img;
-        if(!img||img.width!==src.w||img.height!==src.h*src.inputFrames)throw Error('As dimensões mudaram; reabra o estúdio.');
-        if(settings.frames!==src.inputFrames||strip.width!==img.width||strip.height!==img.height)throw Error('Os frames não coincidem com a textura original.');
-        tex.fromDataURL(strip.toDataURL('image/png'));
-        if(typeof tex.updateMaterial==='function')tex.updateMaterial();
-        if(typeof tex.select==='function')tex.select();
-        activeTexture=tex;
-        message('Aplicado na mesma textura sem alterar resolução, UVs ou duração dos frames: '+tex.name);
-      }catch(e){message('Falha ao aplicar: '+e.message,true);}
+        const tex = src.texture;
+        if (!Texture.all.includes(tex)) throw Error('A textura selecionada foi removida.');
+        const original = tex.canvas && tex.canvas.width ? tex.canvas : tex.img;
+        if (!original || original.width !== strip.width || original.height !== strip.height) {
+          throw Error('A resolução da textura mudou. Reabra o estúdio.');
+        }
+        if (settings.frames !== src.inputFrames) throw Error('A quantidade de frames deve permanecer igual.');
+        if (tex.layers_enabled) {
+          throw Error('Esta textura usa camadas. Mescle/desative as camadas ou edite uma cópia para evitar sobrescrever a composição.');
+        }
+        if (typeof tex.edit !== 'function') throw Error('Este Blockbench não oferece edição de textura pelo plugin.');
+        // Detect a no-op before editing: color mask or intensity may exclude all pixels.
+        const finalCtx = strip.getContext('2d', {willReadFrequently: true});
+        const finalPixels = finalCtx.getImageData(0, 0, strip.width, strip.height).data;
+        let changed = 0;
+        for (let n = 0; n < src.inputFrames; n++) {
+          const oldFrame = src.pixelsByFrame[n];
+          const offset = n * src.w * src.h * 4;
+          for (let p = 0; p < oldFrame.length; p += 4) {
+            if (oldFrame[p] !== finalPixels[offset+p] ||
+                oldFrame[p+1] !== finalPixels[offset+p+1] ||
+                oldFrame[p+2] !== finalPixels[offset+p+2]) changed++;
+          }
+        }
+        if (!changed) throw Error('Nenhum pixel mudou. Ajuste Aplicar em para Toda parte visível, aumente a tolerância ou mude a intensidade do efeito.');
+        tex.edit(canvas => {
+          if (!canvas || typeof canvas.getContext !== 'function') throw Error('Canvas de edição indisponível.');
+          if (canvas.width !== strip.width || canvas.height !== strip.height) throw Error('A área de edição não tem as dimensões esperadas.');
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(strip, 0, 0);
+        }, {method:'canvas', edit_name:'Pixel Palette Studio · Aplicar efeitos'});
+        if (typeof tex.select === 'function') tex.select();
+        activeTexture = tex;
+        message('Aplicado: '+changed+' pixel(s) modificados em '+tex.name+'. Mesma resolução e frames. Salve a textura.');
+      } catch (e) {message('Falha ao aplicar: ' + (e.message || e), true);}
     });
     generate();
   }
   Plugin.register(PLUGIN_ID, {
-    title: 'Pixel Palette Studio — Flipbook FX 2.3.1',
+    title: 'Pixel Palette Studio — Flipbook FX 2.6.3',
     author: 'OpenAI',
     icon: 'auto_awesome',
     description: 'Presets de reflexos metálicos, brilho vertical, faíscas, paleta e prévia em flipbook.',
