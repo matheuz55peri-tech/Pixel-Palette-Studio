@@ -1,5 +1,5 @@
 {
-  "version": "2.9.0",
+  "version": "2.9.1",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "Chamas cartoon com textura multitonais, silhuetas oscilantes e faíscas: 5 geradores de fogo transparentes e 4 efeitos de fogo no editor sem interferir nos modos existentes."
+  "notes": "Corrige previsualização e geração das chamas: o desenho agora acontece em cada frame do flipbook, sem perder o fundo transparente. Mantém os outros presets e ambas as abas."
 }
