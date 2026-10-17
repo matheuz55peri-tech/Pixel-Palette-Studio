@@ -1,5 +1,5 @@
 {
-  "version": "2.4.0",
+  "version": "2.4.1",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "Seis novos efeitos inspirados em vídeos: ouro, runas, gelo espectral, pulso arcano, onda cromática e brasas. Inclui zoom e edição da mesma textura."
+  "notes": "Correção da captura de texturas animadas: lê todos os frames originais, mantém a textura selecionada e ajusta as dimensões do flipbook."
 }
