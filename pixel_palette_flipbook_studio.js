@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.5.0';
+  const CURRENT_VERSION = '2.6.2';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -216,6 +216,18 @@
             const seed=hash(x,y,0);
             strength=seed>0.90?Math.pow(Math.max(0,Math.sin(6.283*(t0+hash(x,y,1)))),8):0;
           }
+
+          if(s.preset.startsWith('water_')) {
+            const u=x/Math.max(1,src.w),v=y/Math.max(1,src.h),tau=Math.PI*2;
+            if(s.preset==='water_ripple') strength=Math.pow(Math.max(0,Math.sin(tau*(v*2+u*0.45-t0))),2)*0.8;
+            if(s.preset==='water_flow') strength=Math.pow(Math.max(0,Math.sin(tau*(u*3.2+v*0.5-t0))),2.5)*0.85;
+            if(s.preset==='water_fall') strength=clamp(Math.pow(Math.max(0,Math.sin(tau*(u*3.8+v*1.7-t0))),2)*0.8+Math.max(0,1-v*7)*0.2+Math.max(0,(v-0.85)*4)*0.3,0,1);
+            if(s.preset==='water_foam') strength=Math.pow(Math.max(0,Math.sin(tau*(u*2-t0)+Math.sin(v*11))),3)*Math.exp(-Math.pow((v-0.78)*4,2));
+            if(s.preset==='water_caustic') strength=Math.pow(Math.max(0,(Math.sin(tau*(u*3+t0))+Math.sin(tau*(v*3.4-t0))+Math.sin(tau*((u+v)*2.3+t0)))/3),2)*0.94;
+            if(s.preset==='water_rain'){strength=0;for(let k=0;k<6;k++){const cx=hash(k,11,0),cy=hash(k,12,0),radius=((t0+hash(k,13,0))%1)*0.31,d=Math.hypot(u-cx,v-cy);strength=Math.max(strength,Math.exp(-Math.pow((d-radius)*22,2)));}}
+            if(s.preset==='water_bubbles'){strength=0;for(let k=0;k<8;k++){const yy=1-((hash(k,5,0)+t0*0.67)%1),xx=(hash(k,6,0)+Math.sin(tau*(t0+hash(k,7,0)))*0.035+1)%1,d=Math.hypot(u-xx,v-yy);strength=Math.max(strength,Math.exp(-d*d/0.002));}}
+            if(s.preset==='water_tide') strength=clamp(Math.pow(Math.max(0,Math.sin(tau*(v*1.5-t0))),2)*0.7+Math.pow(Math.max(0,Math.sin(tau*(u*1.1+v*0.65-t0))),2)*0.22,0,1);
+          }
           if(s.preset==='edge') {
             let borders=0;
             for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
@@ -243,7 +255,7 @@
   function launch(preset = 'vertical', texture = null) {
     stop();
     activeTexture = texture && typeof Texture !== 'undefined' && Texture.all?.includes(texture) ? texture : resolveTexture();
-    const presetNames = ['vertical','diagonal','horizontal','pulse','sparkle','edge','palette','gold','rune','spectral','arcane','chromatic','embers','petals','fireflies','sunrays','breeze','lantern','dew'];
+    const presetNames = ['vertical','diagonal','horizontal','pulse','sparkle','edge','palette','gold','rune','spectral','arcane','chromatic','embers','petals','fireflies','sunrays','breeze','lantern','dew','water_ripple','water_flow','water_fall','water_foam','water_caustic','water_rain','water_bubbles','water_tide'];
     if (!presetNames.includes(preset)) preset = 'vertical';
     const html = `
     <style>
@@ -308,7 +320,8 @@
 <button class="preset" data-preset="breeze" type="button"><b>≋</b>Brisa suave</button>
 <button class="preset" data-preset="lantern" type="button"><b>♨</b>Luz de lanterna</button>
 <button class="preset" data-preset="dew" type="button"><b>✧</b>Orvalho brilhante</button></div>
-<input type="hidden" id="ppf_preset" value="vertical">
+<div class="heading" style="margin-top:16px">04 / Pacote de Água</div><div class="progressinfo">Ondas, correntezas, espuma e reflexos. Mantém os pixels transparentes e os frames originais.</div><div class="presets">
+<button class="preset" data-preset="water_ripple" type="button"><b>≈</b>Ondulações</button><button class="preset" data-preset="water_flow" type="button"><b>↝</b>Correnteza</button><button class="preset" data-preset="water_fall" type="button"><b>⇊</b>Cachoeira</button><button class="preset" data-preset="water_foam" type="button"><b>✽</b>Espuma</button><button class="preset" data-preset="water_caustic" type="button"><b>⌇</b>Cáusticas</button><button class="preset" data-preset="water_rain" type="button"><b>◌</b>Chuva na água</button><button class="preset" data-preset="water_bubbles" type="button"><b>˚</b>Bolhas</button><button class="preset" data-preset="water_tide" type="button"><b>∿</b>Maré</button></div><input type="hidden" id="ppf_preset" value="vertical">
           <div class="heading">02 / Aparência e movimento</div>
           <div class="twocol"><div class="field"><label for="ppf_glow">Cor do reflexo</label><input type="color" id="ppf_glow" value="#fff5e8"></div>
           <div class="field"><label for="ppf_intensity">Intensidade <span id="ppf_intensityText">85%</span></label><input type="range" id="ppf_intensity" min="0" max="100" value="85"></div></div>
@@ -350,10 +363,10 @@
     dialog.show();
     const initialPreset = $('preset');
     if (initialPreset) initialPreset.value = preset;
-    const presetColors={petals:'#ffa5ca',fireflies:'#ecffa2',sunrays:'#fff1b0',breeze:'#9de8ff',lantern:'#ffca79',dew:'#e7faff',gold:'#ffe49b',rune:'#70ff9d',spectral:'#7ceaff',arcane:'#fa78ee',chromatic:'#e7a0ff',embers:'#ffa45b'};
+    const presetColors={water_ripple:'#8fe7ff',water_flow:'#64d5ff',water_fall:'#d3f6ff',water_foam:'#ffffff',water_caustic:'#a4f6ff',water_rain:'#9fdcff',water_bubbles:'#d9fbff',water_tide:'#71cfff',petals:'#ffa5ca',fireflies:'#ecffa2',sunrays:'#fff1b0',breeze:'#9de8ff',lantern:'#ffca79',dew:'#e7faff',gold:'#ffe49b',rune:'#70ff9d',spectral:'#7ceaff',arcane:'#fa78ee',chromatic:'#e7a0ff',embers:'#ffa45b'};
     if(presetColors[preset] && $('glow')) $('glow').value=presetColors[preset];
     document.querySelectorAll('#ppf_root .preset').forEach(el => el.classList.toggle('active', el.dataset.preset === preset));
-    const descriptionsInitial = {petals:'Pétalas coloridas atravessam a textura.',fireflies:'Pontos luminosos flutuantes.',sunrays:'Faixas de sol atravessam a textura.',breeze:'Ondas translúcidas sugerem vento.',lantern:'Luz quente oscilante.',dew:'Reflexos de gotas cintilantes.',gold:'Cintilação dourada em ondas.',rune:'Runas verdes iluminadas.',spectral:'Faixas ciano em movimento.',arcane:'Pulso magenta e faíscas.',chromatic:'Ondas rosa, violeta e azul.',embers:'Brasas mágicas.',vertical:'A faixa clara percorre os pixels de baixo para cima.',diagonal:'Reflexo inclinado sobre a superfície.',horizontal:'A faixa atravessa da esquerda para a direita.',pulse:'O brilho aumenta e diminui.',sparkle:'Pontos brilhantes aparecem e desaparecem.',edge:'O contorno externo reluz.',palette:'Transição gradual entre duas cores.'};
+    const descriptionsInitial = {water_ripple:'Ondulações iluminadas.',water_flow:'Correnteza deslizando pela textura.',water_fall:'Cachoeira com fluxo vertical.',water_foam:'Espuma nas cristas.',water_caustic:'Reflexos subaquáticos.',water_rain:'Anéis de chuva.',water_bubbles:'Bolhas ascendentes.',water_tide:'Maré em ondas amplas.',petals:'Pétalas coloridas atravessam a textura.',fireflies:'Pontos luminosos flutuantes.',sunrays:'Faixas de sol atravessam a textura.',breeze:'Ondas translúcidas sugerem vento.',lantern:'Luz quente oscilante.',dew:'Reflexos de gotas cintilantes.',gold:'Cintilação dourada em ondas.',rune:'Runas verdes iluminadas.',spectral:'Faixas ciano em movimento.',arcane:'Pulso magenta e faíscas.',chromatic:'Ondas rosa, violeta e azul.',embers:'Brasas mágicas.',vertical:'A faixa clara percorre os pixels de baixo para cima.',diagonal:'Reflexo inclinado sobre a superfície.',horizontal:'A faixa atravessa da esquerda para a direita.',pulse:'O brilho aumenta e diminui.',sparkle:'Pontos brilhantes aparecem e desaparecem.',edge:'O contorno externo reluz.',palette:'Transição gradual entre duas cores.'};
     if ($('effectdesc')) $('effectdesc').textContent = descriptionsInitial[preset];
     let strip = null, src = null, settings = null, frame = 0, paused = false;
     function applyZoom(){const c=$('canvas');if(!c)return;const z=clamp(Number($('zoom')?.value||8),1,32);c.style.width=((src?.w||16)*z)+'px';c.style.height=((src?.h||16)*z)+'px';$('zoomLabel').textContent=z+'x';}
@@ -366,6 +379,7 @@
     function generate() {
       try {
         src = getSource(); settings = readSettings();
+        if(src.texture){settings.frames=src.inputFrames;const fc=$('frames');if(fc){fc.value=String(settings.frames);fc.disabled=true;fc.title='Frames fixos para preservar a textura';}}
         strip = makeFrames(src, settings);
         frame = 0;
         $('scrub').max = settings.frames - 1;
@@ -384,11 +398,12 @@
     for (const id of ['base','target','frames','fps','tolerance','mask','ease','loop','shade','width','height','glow','intensity','band','coverage','reverse']) {
       const el = $(id); if (el) el.addEventListener('input', queueGenerate);
     }
-    const descriptions={petals:'Pétalas atravessam a superfície.',fireflies:'Luzes flutuantes.',sunrays:'Raios de sol em movimento.',breeze:'Brisa suave.',lantern:'Luz quente oscilante.',dew:'Orvalho brilhante.',gold:'Metal dourado cintilante.',rune:'Runas verdes pulsantes.',spectral:'Brilho espectral ciano.',arcane:'Descargas arcanas magenta.',chromatic:'Onda cromática.',embers:'Brasas em movimento.',vertical:'A faixa clara percorre a textura de baixo para cima.',diagonal:'Reflexo inclinado para criar o brilho de metal polido.',horizontal:'A luz percorre a textura da esquerda para a direita.',pulse:'A iluminação aumenta e diminui progressivamente.',sparkle:'Pontos brilhantes discretos aparecem e desaparecem.',edge:'O contorno externo reluz sem preencher o interior.',palette:'Transição gradual da cor inicial para a cor final.'};
+    const descriptions={water_ripple:'Ondulações aquáticas.',water_flow:'Correnteza horizontal.',water_fall:'Queda de água.',water_foam:'Espuma costeira.',water_caustic:'Cáusticas luminosas.',water_rain:'Anéis de chuva.',water_bubbles:'Bolhas ascendentes.',water_tide:'Movimento da maré.',petals:'Pétalas atravessam a superfície.',fireflies:'Luzes flutuantes.',sunrays:'Raios de sol em movimento.',breeze:'Brisa suave.',lantern:'Luz quente oscilante.',dew:'Orvalho brilhante.',gold:'Metal dourado cintilante.',rune:'Runas verdes pulsantes.',spectral:'Brilho espectral ciano.',arcane:'Descargas arcanas magenta.',chromatic:'Onda cromática.',embers:'Brasas em movimento.',vertical:'A faixa clara percorre a textura de baixo para cima.',diagonal:'Reflexo inclinado para criar o brilho de metal polido.',horizontal:'A luz percorre a textura da esquerda para a direita.',pulse:'A iluminação aumenta e diminui progressivamente.',sparkle:'Pontos brilhantes discretos aparecem e desaparecem.',edge:'O contorno externo reluz sem preencher o interior.',palette:'Transição gradual da cor inicial para a cor final.'};
     document.querySelectorAll('#ppf_root .preset').forEach(btn=>btn.addEventListener('click',()=>{
       $('preset').value=btn.dataset.preset;
       document.querySelectorAll('#ppf_root .preset').forEach(el=>el.classList.toggle('active',el===btn));
       $('effectdesc').textContent=descriptions[btn.dataset.preset];
+      const waterColors={water_ripple:'#8fe7ff',water_flow:'#64d5ff',water_fall:'#d3f6ff',water_foam:'#ffffff',water_caustic:'#a4f6ff',water_rain:'#9fdcff',water_bubbles:'#d9fbff',water_tide:'#71cfff',};if(waterColors[btn.dataset.preset])$('glow').value=waterColors[btn.dataset.preset];
       if(presetColors[btn.dataset.preset])$('glow').value=presetColors[btn.dataset.preset];
       queueGenerate();
     }));
@@ -407,21 +422,19 @@
       } catch(e) {message('Erro no download: '+e.message,true);}
     });
     $('create').addEventListener('click', () => {
-      if (!strip) return message('Não há frames gerados.',true);
-      try{
+      if(!strip||!src||!src.texture)return message('Selecione uma textura existente antes de aplicar.',true);
+      try {
         const tex=src.texture;
-        if(!tex || !Texture.all.includes(tex))throw Error('A textura original não está mais disponível.');
+        if(!Texture.all.includes(tex))throw Error('A textura selecionada foi removida.');
+        const img=tex.canvas&&tex.canvas.width?tex.canvas:tex.img;
+        if(!img||img.width!==src.w||img.height!==src.h*src.inputFrames)throw Error('As dimensões mudaram; reabra o estúdio.');
+        if(settings.frames!==src.inputFrames||strip.width!==img.width||strip.height!==img.height)throw Error('Os frames não coincidem com a textura original.');
         tex.fromDataURL(strip.toDataURL('image/png'));
-        tex.uv_width=src.w;tex.uv_height=src.h;
-        tex.frame_time=Math.max(1,Math.round(20/settings.fps));
-        tex.frame_order_type='loop';tex.frame_interpolate=false;
-        if('width' in tex)tex.width=src.w;
-        if('height' in tex)tex.height=src.h*settings.frames;
-        if(typeof tex.select==='function')tex.select();
         if(typeof tex.updateMaterial==='function')tex.updateMaterial();
+        if(typeof tex.select==='function')tex.select();
         activeTexture=tex;
-        message('Atualizada a própria textura: '+tex.name+' ('+settings.frames+' frames). Salve o projeto.');
-      }catch(e){message('Erro ao aplicar na textura: '+e.message,true);}
+        message('Aplicado na mesma textura sem alterar resolução, UVs ou duração dos frames: '+tex.name);
+      }catch(e){message('Falha ao aplicar: '+e.message,true);}
     });
     generate();
   }
