@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.9.2';
+  const CURRENT_VERSION = '2.9.3';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -16,9 +16,22 @@
   }
   async function checkUpdates(silent=false) {
     try {
-      const response=await fetch(RAW_BASE+'version.json?nocache='+Date.now(),{cache:'no-store'});
-      if(!response.ok) throw new Error('HTTP '+response.status);
-      const data=await response.json();
+      // GitHub Contents API bypasses stale raw.githubusercontent.com edge caches.
+      // Fall back to the raw manifest when API access is unavailable.
+      let data;
+      try {
+        const api='https://api.github.com/repos/'+REPOSITORY+'/contents/version.json?ref=main&nocache='+Date.now();
+        const response=await fetch(api,{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
+        if(!response.ok)throw Error('GitHub API HTTP '+response.status);
+        const file=await response.json();
+        if(typeof file.content!=='string')throw Error('Manifesto não encontrado na API.');
+        const bytes=Uint8Array.from(atob(file.content.replace(/\\s/g,'')),c=>c.charCodeAt(0));
+        data=JSON.parse(new TextDecoder().decode(bytes));
+      }catch(apiError){
+        const response=await fetch(RAW_BASE+'version.json?nocache='+Date.now(),{cache:'no-store'});
+        if(!response.ok)throw Error('Manifesto indisponível: '+apiError.message);
+        data=await response.json();
+      }
       if(!data || !/^\d+\.\d+\.\d+$/.test(data.version) || data.url!==RAW_BASE+'pixel_palette_flipbook_studio.js')throw new Error('Manifesto de atualização inválido.');
       if(compareVersions(data.version,CURRENT_VERSION)<=0){
         if(!silent)Blockbench.showMessageBox({title:'Pixel Palette Studio',message:'Você já está na versão mais recente ('+CURRENT_VERSION+').'});
@@ -667,7 +680,7 @@
   }
 
   Plugin.register(PLUGIN_ID, {
-    title: 'Pixel Palette Studio — Flipbook FX 2.9.2',
+    title: 'Pixel Palette Studio — Flipbook FX 2.9.3',
     author: 'OpenAI',
     icon: 'auto_awesome',
     description: 'Presets de reflexos metálicos, brilho vertical, faíscas, paleta e prévia em flipbook.',
