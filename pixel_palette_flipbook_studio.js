@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.9.5';
+  const CURRENT_VERSION = '2.9.6';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -25,7 +25,7 @@
         if(!response.ok)throw Error('GitHub API HTTP '+response.status);
         const file=await response.json();
         if(typeof file.content!=='string')throw Error('Manifesto não encontrado na API.');
-        const bytes=Uint8Array.from(atob(file.content.replace(/\\s/g,'')),c=>c.charCodeAt(0));
+        const bytes=Uint8Array.from(atob(file.content.replace(/\s/g,'')),c=>c.charCodeAt(0));
         data=JSON.parse(new TextDecoder().decode(bytes));
       }catch(apiError){
         const response=await fetch(RAW_BASE+'version.json?nocache='+Date.now(),{cache:'no-store'});
