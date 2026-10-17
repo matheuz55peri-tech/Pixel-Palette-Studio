@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.6.5';
+  const CURRENT_VERSION = '2.7.0';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -295,7 +295,7 @@
     </style>
     <div id="ppf_root">
       <div class="top"><div class="logo">✦</div><div><h2>Pixel Palette Studio</h2><div class="sub">Transições de cor · Flipbook · Prévia ao vivo</div></div></div>
-      <div class="layout">
+      <div class="tabs" style="display:flex;gap:8px;margin-bottom:12px"><button type="button" id="ppf_switchEditor" style="flex:1;padding:10px;background:#68427c;color:white;border:1px solid #b885d1;border-radius:8px">Editor sobre textura</button><button type="button" id="ppf_switchCreator" style="flex:1;padding:10px;background:#30273f;color:white;border:1px solid #745184;border-radius:8px">Gerador transparente ✦</button></div><div class="layout">
         <section class="panel">
           <div class="heading">01 / Biblioteca de efeitos</div>
           <div class="presets" id="ppf_presetCards">
@@ -359,8 +359,10 @@
         </section>
       </div>
     </div>`;
+    // Generator is an independent dialog; the existing editor and handlers stay untouched.
     dialog = new Dialog({id: 'ppf_studio_dialog', title: 'Pixel Palette Studio · Flipbook', width: 850, lines: [html], buttons: ['Fechar'], onCancel: stop, onConfirm: stop});
     dialog.show();
+    document.getElementById('ppf_switchCreator')?.addEventListener('click',()=>{ dialog?.hide(); openTransparentGenerator(); });
     const initialPreset = $('preset');
     if (initialPreset) initialPreset.value = preset;
     const presetColors={water_ripple:'#8fe7ff',water_flow:'#64d5ff',water_fall:'#d3f6ff',water_foam:'#ffffff',water_caustic:'#a4f6ff',water_rain:'#9fdcff',water_bubbles:'#d9fbff',water_tide:'#71cfff',petals:'#ffa5ca',fireflies:'#ecffa2',sunrays:'#fff1b0',breeze:'#9de8ff',lantern:'#ffca79',dew:'#e7faff',gold:'#ffe49b',rune:'#70ff9d',spectral:'#7ceaff',arcane:'#fa78ee',chromatic:'#e7a0ff',embers:'#ffa45b'};
@@ -480,8 +482,118 @@
     });
     generate();
   }
+
+  function openTransparentGenerator(){
+    stop();
+    const html=`
+    <style>
+    #ppfg{color:var(--color-text,#eee);font-family:inherit}
+    #ppfg *{box-sizing:border-box}
+    #ppfg .tabs{display:flex;gap:8px;margin-bottom:12px}
+    #ppfg .tabs button,#ppfg button{background:#3b2b4b;border:1px solid #7f638c;color:white;border-radius:9px;padding:8px;cursor:pointer}
+    #ppfg .tabs .active{background:#704783;border-color:#dda6ed}
+    #ppfg .wrap{display:grid;grid-template-columns:minmax(280px,1fr) minmax(260px,1fr);gap:12px}
+    #ppfg .card{background:var(--color-back,#29252e);border:1px solid #65576f;border-radius:12px;padding:14px;min-width:0}
+    #ppfg .presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+    #ppfg .presets button{min-height:50px;font-size:11px}
+    #ppfg .presets .active{background:#774d91;border-color:#e2a8fa}
+    #ppfg .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    #ppfg label{display:block;font-size:11px;margin:8px 0 4px}
+    #ppfg input{width:100%;padding:5px;border:1px solid #605268;border-radius:6px;background:#34303a;color:#fff}
+    #ppfg .viewer{height:270px;overflow:auto;background-color:#1d1c27;background-image:linear-gradient(45deg,#30313c 25%,transparent 25%),linear-gradient(-45deg,#30313c 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#30313c 75%),linear-gradient(-45deg,transparent 75%,#30313c 75%);background-size:16px 16px;display:flex;align-items:center;justify-content:center;border-radius:10px}
+    #ppfg canvas{image-rendering:pixelated;flex:none}
+    #ppfg .note{font-size:11px;opacity:.75;margin:9px 0}
+    #ppfg .primary{width:100%;background:#8953b5;margin-top:8px}
+    </style>
+    <div id="ppfg">
+    <div class="tabs"><button id="ppfg_back">Editor sobre textura</button><button class="active">Gerador transparente ✦</button></div>
+    <div class="wrap"><section class="card">
+    <h3>✦ Animações do zero</h3><p class="note">Desenha os próprios pixels. Fundo 100% invisível; não utiliza a pintura anterior.</p>
+    <div class="presets">
+    <button data-effect="petals" class="active">❀ Pétalas</button><button data-effect="leaves">❃ Folhas</button>
+    <button data-effect="ripples">≈ Ondas</button><button data-effect="flow">↝ Correnteza</button>
+    <button data-effect="waterfall">⇊ Cachoeira</button><button data-effect="foam">✽ Espuma</button>
+    <button data-effect="rain">◌ Chuva</button><button data-effect="bubbles">˚ Bolhas</button></div>
+    <div class="fields"><div><label>Cor principal</label><input id="ppfg_color1" type="color" value="#ff6ea8"></div><div><label>Cor secundária</label><input id="ppfg_color2" type="color" value="#ffd6e7"></div>
+    <div><label>Largura por frame</label><input id="ppfg_w" type="number" min="1" max="128" value="32"></div><div><label>Altura por frame</label><input id="ppfg_h" type="number" min="1" max="128" value="32"></div>
+    <div><label>Frames</label><input id="ppfg_frames" type="number" min="2" max="128" value="16"></div><div><label>Velocidade (FPS)</label><input id="ppfg_fps" type="number" min="0.1" max="20" step="0.1" value="4"></div>
+    <div><label>Quantidade de elementos</label><input id="ppfg_count" type="number" min="1" max="40" value="10"></div><div><label>Tamanho dos elementos</label><input id="ppfg_size" type="number" min="1" max="6" value="2"></div></div>
+    <p class="note">Ao aplicar, a textura normal selecionada é convertida em flipbook. A pintura original será substituída pela animação transparente.</p>
+    </section><section class="card"><h3>Prévia animada</h3><div class="viewer"><canvas id="ppfg_preview" width="32" height="32"></canvas></div>
+    <div class="fields"><div><label>Zoom</label><input id="ppfg_zoom" type="range" min="1" max="16" value="7"></div><div><label>Frame</label><input id="ppfg_seek" type="range" min="0" max="15" value="0"></div></div>
+    <div class="tabs" style="margin-top:10px"><button id="ppfg_pause">⏸ Pausar</button><button id="ppfg_png">Salvar PNG</button></div>
+    <button id="ppfg_apply" class="primary">✦ Converter textura em flipbook</button><p class="note" id="ppfg_status"></p>
+    </section></div></div>`;
+    const dlg=new Dialog({id:'ppfg_generator_dialog',title:'Pixel Palette Studio · Gerador transparente',width:850,lines:[html],buttons:['Fechar'],onCancel:()=>clearInterval(timer),onConfirm:()=>clearInterval(timer)});
+    dlg.show();
+    const el=id=>document.getElementById('ppfg_'+id);
+    let kind='petals',frame=0,paused=false,output=null,w=32,h=32,n=16,fps=4;
+    let timer=null;
+    const rand=(a,b)=>{let k=Math.imul(a+31,73856093)^Math.imul(b+97,19349663);k=Math.imul(k^(k>>>13),1274126177);return ((k^(k>>>16))>>>0)/4294967295};
+    function settings(){w=clamp(Math.round(+el('w').value||32),1,128);h=clamp(Math.round(+el('h').value||32),1,128);n=clamp(Math.round(+el('frames').value||16),2,128);fps=clamp(+el('fps').value||4,0.1,20);return {count:clamp(Math.round(+el('count').value||10),1,40),size:clamp(+el('size').value||2,1,6)}}
+    function render(){
+      const cfg=settings();if(w*h*n>4194304)throw Error('Reduza as dimensões ou os frames.');
+      const out=document.createElement('canvas');out.width=w;out.height=h*n;const ctx=out.getContext('2d');const tau=Math.PI*2;
+      const a=el('color1').value,b=el('color2').value;
+      const dot=(x,y,col,size=1)=>{ctx.fillStyle=col;ctx.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(size)),Math.max(1,Math.round(size)))};
+      for(let f=0;f<n;f++){
+        const t=f/n,oy=f*h;
+        for(let i=0;i<cfg.count;i++){
+          const seed=rand(i,1),phase=(t+seed)%1;
+          const x=rand(i,2)*w+Math.sin(tau*(t+rand(i,3)))*cfg.size*1.5;
+          if(kind==='petals'||kind==='leaves'){
+            const y=phase*(h+5)-2;
+            dot(x,y+oy,i%3? a:b,cfg.size);dot(x-1,y+oy+cfg.size,a,1);
+          }else if(kind==='bubbles'){
+            const y=(1-phase)*h;
+            dot(x,y+oy,i%2?a:b,1);dot(x+cfg.size,y+oy,b,1);dot(x,y+oy+cfg.size,b,1);
+          }else if(kind==='rain'){
+            const y=phase*h;
+            dot(x,y+oy,b,1);dot(x+1,y+oy+1,a,1);
+          }else if(kind==='ripples'){
+            const cx=rand(i,4)*w,cy=rand(i,5)*h,r=1+phase*Math.min(w,h)*.25;
+            for(let z=0;z<Math.max(12,r*12);z++){const ang=tau*z/Math.max(12,r*12);dot(cx+Math.cos(ang)*r,cy+Math.sin(ang)*r+oy,i%2?a:b,1)}
+          }else if(kind==='flow'||kind==='foam'){
+            const y=phase*h;
+            for(let xx=0;xx<w;xx+=2) dot(xx,y+Math.sin(xx/w*tau*2+t*tau)*cfg.size+oy,kind==='foam'?b:a,1);
+          }else if(kind==='waterfall'){
+            const xx=rand(i,6)*w;
+            for(let yy=0;yy<h;yy+=2)dot(xx+Math.sin(tau*t+yy*.08)*cfg.size,((yy+Math.floor(t*h))%h)+oy,i%3? a:b,1);
+          }
+        }
+      }
+      output=out;frame=Math.min(frame,n-1);el('seek').max=n-1;
+      show();
+    }
+    function show(){if(!output)return;const c=el('preview'),ctx=c.getContext('2d');c.width=w;c.height=h;ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,w,h);ctx.drawImage(output,0,frame*h,w,h,0,0,w,h);const z=+el('zoom').value||7;c.style.width=(w*z)+'px';c.style.height=(h*z)+'px';el('seek').value=frame;}
+    let delay=160;
+    function animate(){clearInterval(timer);delay=1000/fps;timer=setInterval(()=>{if(!paused){frame=(frame+1)%n;show()}},delay)}
+    function refresh(){try{render();animate();el('status').textContent='Pronto · fundo transparente · '+w+' × '+h*n+' px';}catch(e){el('status').textContent=e.message;output=null}}
+    for(const id of ['color1','color2','w','h','frames','fps','count','size'])el(id).addEventListener('input',refresh);
+    document.querySelectorAll('#ppfg [data-effect]').forEach(btn=>btn.addEventListener('click',()=>{kind=btn.dataset.effect;document.querySelectorAll('#ppfg [data-effect]').forEach(x=>x.classList.toggle('active',x===btn));refresh()}));
+    el('zoom').addEventListener('input',show);
+    el('seek').addEventListener('input',()=>{frame=+el('seek').value;paused=true;show()});
+    el('pause').addEventListener('click',()=>{paused=!paused;el('pause').textContent=paused?'▶ Reproduzir':'⏸ Pausar'});
+    el('back').addEventListener('click',()=>{clearInterval(timer);dlg.hide();launch('vertical')});
+    el('png').addEventListener('click',()=>{if(!output)return;const link=document.createElement('a');link.href=output.toDataURL('image/png');link.download='pixel_palette_'+kind+'.png';link.click()});
+    el('apply').addEventListener('click',()=>{
+      try{
+        if(!output)throw Error('Gere a prévia primeiro.');
+        const tex=typeof Texture!=='undefined'?Texture.selected||Texture.all?.find(t=>t.selected):null;
+        if(!tex)throw Error('Selecione uma textura normal na lista IMAGES antes de aplicar.');
+        if(tex.layers_enabled)throw Error('Textura com camadas: use uma textura normal sem camadas para este modo.');
+        tex.fromDataURL(output.toDataURL('image/png'));tex.uv_width=w;tex.uv_height=h;
+        tex.frame_time=Math.max(1,Math.round(20/fps));tex.frame_order_type='loop';tex.frame_interpolate=false;
+        if(typeof tex.select==='function')tex.select();
+        if(typeof tex.updateMaterial==='function')tex.updateMaterial();
+        el('status').textContent='Convertida: '+tex.name+' · '+w+' × '+(h*n)+' px, '+n+' frames. Salve a textura.';
+      }catch(e){el('status').textContent='Erro: '+e.message}
+    });
+    refresh();
+  }
+
   Plugin.register(PLUGIN_ID, {
-    title: 'Pixel Palette Studio — Flipbook FX 2.6.5',
+    title: 'Pixel Palette Studio — Flipbook FX 2.7.0',
     author: 'OpenAI',
     icon: 'auto_awesome',
     description: 'Presets de reflexos metálicos, brilho vertical, faíscas, paleta e prévia em flipbook.',
