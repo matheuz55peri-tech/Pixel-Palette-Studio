@@ -1,5 +1,5 @@
 {
-  "version": "2.9.3",
+  "version": "2.9.4",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "Corrige verificação de atualização desatualizada: consulta primeiro a API oficial de conteúdos do GitHub e usa manifesto raw como alternativa. Interface exibe a versão carregada."
+  "notes": "Slider HUE único para recolorir chamas do Gerador transparente e novo preset Bolhas em coluna, mantendo as outras funções."
 }
