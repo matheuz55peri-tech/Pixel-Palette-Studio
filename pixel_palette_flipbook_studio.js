@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.9.3';
+  const CURRENT_VERSION = '2.9.4';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -547,9 +547,10 @@
     <button data-effect="petals" class="active">❀ Pétalas</button><button data-effect="leaves">❃ Folhas</button>
     <button data-effect="ripples">≈ Ondas</button><button data-effect="flow">↝ Correnteza</button>
     <button data-effect="waterfall">⇊ Cachoeira</button><button data-effect="foam">✽ Espuma</button>
-    <button data-effect="rain">◌ Chuva</button><button data-effect="bubbles">˚ Bolhas</button>
+    <button data-effect="rain">◌ Chuva</button><button data-effect="bubbles">˚ Bolhas</button><button data-effect="bubble_stream">◌ Bolhas em coluna</button>
     <button data-effect="fire">♨ Chamas</button><button data-effect="snow">❄ Neve</button><button data-effect="sparks">✧ Faíscas</button><button data-effect="lightning">ϟ Raios</button><button data-effect="burst">◎ Pulso mágico</button><button data-effect="flame_torch">♨ Tocha cartoon</button><button data-effect="flame_tall">🔥 Labareda alta</button><button data-effect="flame_blue">❖ Chama azul</button><button data-effect="flame_magic">✦ Fogo mágico</button><button data-effect="flame_camp">♨ Fogueira</button></div>
     <div class="fields"><div><label>Cor principal</label><input id="ppfg_color1" type="color" value="#ff6ea8"></div><div><label>Cor secundária</label><input id="ppfg_color2" type="color" value="#ffd6e7"></div>
+    <div style="grid-column:1/-1"><label>HUE · <span id="ppfg_hueLabel">0°</span></label><input id="ppfg_hue" type="range" min="0" max="359" value="0" step="1"></div>
     <div><label>Largura por frame</label><input id="ppfg_w" type="number" min="1" max="128" value="32"></div><div><label>Altura por frame</label><input id="ppfg_h" type="number" min="1" max="128" value="32"></div>
     <div><label>Frames</label><input id="ppfg_frames" type="number" min="2" max="128" value="16"></div><div><label>Velocidade (FPS)</label><input id="ppfg_fps" type="number" min="0.1" max="20" step="0.1" value="4"></div>
     <div><label>Quantidade de elementos</label><input id="ppfg_count" type="number" min="1" max="40" value="10"></div><div><label>Tamanho dos elementos</label><input id="ppfg_size" type="number" min="1" max="6" value="2"></div></div>
@@ -566,6 +567,7 @@
     let timer=null;
     const rand=(a,b)=>{let k=Math.imul(a+31,73856093)^Math.imul(b+97,19349663);k=Math.imul(k^(k>>>13),1274126177);return ((k^(k>>>16))>>>0)/4294967295};
     function settings(){w=clamp(Math.round(+el('w').value||32),1,128);h=clamp(Math.round(+el('h').value||32),1,128);n=clamp(Math.round(+el('frames').value||16),2,128);fps=clamp(+el('fps').value||4,0.1,20);return {count:clamp(Math.round(+el('count').value||10),1,40),size:clamp(+el('size').value||2,1,6)}}
+    function shiftHue(hex, degrees){const v=parseInt(hex.slice(1),16),r=(v>>16)&255,g=(v>>8)&255,b=v&255; const max=Math.max(r,g,b)/255,min=Math.min(r,g,b)/255,d=max-min;let h=0,s=0,l=(max+min)/2;if(d){s=d/(1-Math.abs(2*l-1));switch(max){case r/255:h=((g-b)/255/d)%6;break;case g/255:h=(b-r)/255/d+2;break;default:h=(r-g)/255/d+4;}h*=60;}h=((h+degrees)%360+360)%360;const a=s*Math.min(l,1-l),fn=n=>{const k=(n+h/30)%12;return Math.round(255*(l-a*Math.max(-1,Math.min(k-3,9-k,1))));};return '#'+[fn(0),fn(8),fn(4)].map(n=>n.toString(16).padStart(2,'0')).join('');}
     function render(){
       const cfg=settings();if(w*h*n>4194304)throw Error('Reduza as dimensões ou os frames.');
       const out=document.createElement('canvas');out.width=w;out.height=h*n;const ctx=out.getContext('2d');const tau=Math.PI*2;
@@ -582,6 +584,11 @@
           }else if(kind==='bubbles'){
             const y=(1-phase)*h;
             dot(x,y+oy,i%2?a:b,1);dot(x+cfg.size,y+oy,b,1);dot(x,y+oy+cfg.size,b,1);
+          }else if(kind==='bubble_stream'){
+            const yy=(1-phase)*h;
+            const xx=w*(.5+.13*Math.sin(tau*(t+rand(i,24))));
+            const radius=Math.max(1,Math.round(cfg.size));
+            for(let z=0;z<12;z++){const ang=tau*z/12;dot(xx+Math.cos(ang)*radius,yy+Math.sin(ang)*radius+oy,i%2?a:b,1);}
           }else if(kind==='rain'){
             const y=phase*h;
             dot(x,y+oy,b,1);dot(x+1,y+oy+1,a,1);
@@ -605,9 +612,10 @@
       // Pixel-art fire uses 3 separately drawn ramps, tapering flame tongues,
       // rhythmic silhouette motion and sparks. No opaque background.
       if(kind.startsWith('flame_')){
-        const palette=kind==='flame_blue'?['#15396c','#167bbb','#6dd8f5','#e9ffff']:
+        const paletteBase=kind==='flame_blue'?['#15396c','#167bbb','#6dd8f5','#e9ffff']:
           kind==='flame_magic'?['#4f175f','#9e42bf','#ed9fff','#fff2ff']:
           ['#a82426','#ed582c','#ffad3f','#fff3aa'];
+        const palette=paletteBase.map(c=>shiftHue(c,Number(el('hue').value)||0));
         const tall=kind==='flame_tall',camp=kind==='flame_camp';
         const center=w*.5,base=h-2;
         const flameH=Math.max(5,Math.floor(h*(tall?.83:camp?.52:.68)));
@@ -656,8 +664,9 @@
     let delay=160;
     function animate(){clearInterval(timer);delay=1000/fps;timer=setInterval(()=>{if(!paused){frame=(frame+1)%n;show()}},delay)}
     function refresh(){try{render();animate();el('status').textContent='Pronto · fundo transparente · '+w+' × '+h*n+' px';}catch(e){el('status').textContent=e.message;output=null}}
-    for(const id of ['color1','color2','w','h','frames','fps','count','size'])el(id).addEventListener('input',refresh);
+    for(const id of ['color1','color2','w','h','frames','fps','count','size','hue'])el(id).addEventListener('input',refresh);
     document.querySelectorAll('#ppfg [data-effect]').forEach(btn=>btn.addEventListener('click',()=>{kind=btn.dataset.effect;document.querySelectorAll('#ppfg [data-effect]').forEach(x=>x.classList.toggle('active',x===btn));refresh()}));
+    el('hue').addEventListener('input',()=>{el('hueLabel').textContent=el('hue').value+'°';});
     el('zoom').addEventListener('input',show);
     el('seek').addEventListener('input',()=>{frame=+el('seek').value;paused=true;show()});
     el('pause').addEventListener('click',()=>{paused=!paused;el('pause').textContent=paused?'▶ Reproduzir':'⏸ Pausar'});
