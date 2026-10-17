@@ -1,5 +1,5 @@
 {
-  "version": "2.5.0",
+  "version": "2.6.2",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "Nova categoria Animações automáticas: pétalas ao vento, vagalumes, raios de sol, brisa suave, luz de lanterna e orvalho brilhante. Mantém os 13 presets anteriores, controles e edição na textura selecionada."
+  "notes": "Pacote de Água com oito presets. Aplicação segura preservando dimensões, UV, quantidade e duração dos frames na textura selecionada."
 }
