@@ -1,5 +1,5 @@
 {
-  "version": "2.9.1",
+  "version": "2.9.2",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "Corrige previsualização e geração das chamas: o desenho agora acontece em cada frame do flipbook, sem perder o fundo transparente. Mantém os outros presets e ambas as abas."
+  "notes": "Exibe a versão carregada nos títulos do plugin e orienta reinstalação manual quando o Blockbench não consegue recarregar automaticamente a instalação via URL."
 }
