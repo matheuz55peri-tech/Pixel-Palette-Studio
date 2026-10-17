@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.9.4';
+  const CURRENT_VERSION = '2.9.5';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -573,6 +573,21 @@
       const out=document.createElement('canvas');out.width=w;out.height=h*n;const ctx=out.getContext('2d');const tau=Math.PI*2;
       const a=el('color1').value,b=el('color2').value;
       const dot=(x,y,col,size=1)=>{ctx.fillStyle=col;ctx.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(size)),Math.max(1,Math.round(size)))};
+      // Rounded translucent bubble outlines with glossy reflected light.
+      const bubble=(cx,cy,r,variation)=>{
+        r=Math.max(2,Math.min(8,Math.round(r)));
+        const tint=variation%2?a:b,seen=new Set();
+        for(let deg=0;deg<360;deg+=Math.max(5,Math.round(25/r))){
+          const ang=deg*Math.PI/180,xx=Math.round(cx+Math.cos(ang)*r),yy=Math.round(cy+Math.sin(ang)*r);
+          const key=xx+','+yy;if(seen.has(key))continue;seen.add(key);
+          ctx.globalAlpha=ang>3.5&&ang<5.8?.9:.55;
+          dot(xx,yy,ang>3.5&&ang<5.8?b:tint,1);
+        }
+        ctx.globalAlpha=1;
+        dot(cx-r*.55,cy-r*.72,'#ffffff',1);
+        dot(cx-r*.27,cy-r*.91,'#ffffff',1);
+        if(r>=4){dot(cx-r*.75,cy-r*.45,b,1);ctx.globalAlpha=.55;dot(cx+r*.6,cy+r*.67,a,1);ctx.globalAlpha=1;}
+      };
       for(let f=0;f<n;f++){
         const t=f/n,oy=f*h;
         for(let i=0;i<cfg.count;i++){
@@ -582,13 +597,15 @@
             const y=phase*(h+5)-2;
             dot(x,y+oy,i%3? a:b,cfg.size);dot(x-1,y+oy+cfg.size,a,1);
           }else if(kind==='bubbles'){
-            const y=(1-phase)*h;
-            dot(x,y+oy,i%2?a:b,1);dot(x+cfg.size,y+oy,b,1);dot(x,y+oy+cfg.size,b,1);
+            const radius=2+Math.floor(rand(i,27)*Math.max(1,cfg.size*1.6));
+            const yy=h+radius-phase*(h+radius*2);
+            const xx=radius+rand(i,28)*Math.max(1,w-radius*2)+Math.sin(tau*(t+rand(i,29)))*1.6;
+            bubble(xx,yy+oy,radius,i);
           }else if(kind==='bubble_stream'){
-            const yy=(1-phase)*h;
-            const xx=w*(.5+.13*Math.sin(tau*(t+rand(i,24))));
-            const radius=Math.max(1,Math.round(cfg.size));
-            for(let z=0;z<12;z++){const ang=tau*z/12;dot(xx+Math.cos(ang)*radius,yy+Math.sin(ang)*radius+oy,i%2?a:b,1);}
+            const radius=2+Math.floor(rand(i,30)*Math.max(1,cfg.size*1.2));
+            const yy=h+radius-phase*(h+radius*2);
+            const xx=w*.5+Math.sin(tau*(t+rand(i,24)))*Math.min(w*.18,3)+Math.sin(tau*(phase*.5+rand(i,31)))*2;
+            bubble(xx,yy+oy,radius,i);
           }else if(kind==='rain'){
             const y=phase*h;
             dot(x,y+oy,b,1);dot(x+1,y+oy+1,a,1);
