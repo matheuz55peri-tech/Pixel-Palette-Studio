@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.9.1';
+  const CURRENT_VERSION = '2.9.2';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -32,9 +32,14 @@
       }, answer=>{
         if(answer!==0)return;
         try {
-          if(plugin && plugin.source==='url' && typeof plugin.reload==='function') plugin.reload();
-          else if(typeof Blockbench.openLink==='function') Blockbench.openLink(data.url);
-          else Blockbench.showQuickMessage('Abra o URL do plugin no GitHub para reinstalar.');
+          if(plugin && plugin.source==='url' && typeof plugin.reload==='function') {
+            plugin.reload();
+            Blockbench.showQuickMessage('Recarregamento solicitado. Reinicie o Blockbench e confira a versao.',5000);
+          } else {
+            const url=data.url+'?version='+encodeURIComponent(data.version);
+            if(typeof navigator!=='undefined' && navigator.clipboard?.writeText) navigator.clipboard.writeText(url).catch(()=>{});
+            Blockbench.showMessageBox({title:'Instalacao manual necessaria',message:'Esta instalacao nao permite recarregamento automatico. Copie a URL atualizada em Plugins > Carregar por URL: '+url+' Reinicie e confira a versao no titulo.',buttons:['Abrir link','OK']},answer=>{if(answer===0&&typeof Blockbench.openLink==='function')Blockbench.openLink(url);});
+          }
         }catch(e){Blockbench.showQuickMessage('Erro na atualização: '+e.message,4000);}
       });
     }catch(err){if(!silent)Blockbench.showMessageBox({title:'Atualizações indisponíveis',message:String(err.message||err)});}
@@ -374,7 +379,7 @@
       </div>
     </div>`;
     // Generator is an independent dialog; the existing editor and handlers stay untouched.
-    dialog = new Dialog({id: 'ppf_studio_dialog', title: 'Pixel Palette Studio · Flipbook', width: 850, lines: [html], buttons: ['Fechar'], onCancel: stop, onConfirm: stop});
+    dialog = new Dialog({id: 'ppf_studio_dialog', title: 'Pixel Palette Studio · Flipbook v'+CURRENT_VERSION, width: 850, lines: [html], buttons: ['Fechar'], onCancel: stop, onConfirm: stop});
     dialog.show();
     document.getElementById('ppf_switchCreator')?.addEventListener('click',()=>{ dialog?.hide(); openTransparentGenerator(); });
     const initialPreset = $('preset');
@@ -541,7 +546,7 @@
     <div class="tabs" style="margin-top:10px"><button id="ppfg_pause">⏸ Pausar</button><button id="ppfg_png">Salvar PNG</button></div>
     <button id="ppfg_apply" class="primary">✦ Converter textura em flipbook</button><p class="note" id="ppfg_status"></p>
     </section></div></div>`;
-    const dlg=new Dialog({id:'ppfg_generator_dialog',title:'Pixel Palette Studio · Gerador transparente',width:850,lines:[html],buttons:['Fechar'],onCancel:()=>clearInterval(timer),onConfirm:()=>clearInterval(timer)});
+    const dlg=new Dialog({id:'ppfg_generator_dialog',title:'Pixel Palette Studio · Gerador transparente v'+CURRENT_VERSION,width:850,lines:[html],buttons:['Fechar'],onCancel:()=>clearInterval(timer),onConfirm:()=>clearInterval(timer)});
     dlg.show();
     const el=id=>document.getElementById('ppfg_'+id);
     let kind='petals',frame=0,paused=false,output=null,w=32,h=32,n=16,fps=4;
@@ -662,7 +667,7 @@
   }
 
   Plugin.register(PLUGIN_ID, {
-    title: 'Pixel Palette Studio — Flipbook FX 2.9.1',
+    title: 'Pixel Palette Studio — Flipbook FX 2.9.2',
     author: 'OpenAI',
     icon: 'auto_awesome',
     description: 'Presets de reflexos metálicos, brilho vertical, faíscas, paleta e prévia em flipbook.',
