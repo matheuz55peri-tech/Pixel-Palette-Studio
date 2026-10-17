@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.4.0';
+  const CURRENT_VERSION = '2.4.1';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -74,24 +74,31 @@
   }
   function getSource() {
     const tex = resolveTexture();
-    const width = tex ? Number(tex.uv_width || tex.width || 16) : clamp(Number($('width')?.value || 16), 1, 128);
-    const height = tex ? Number(tex.uv_height || (tex.frameCount > 1 ? Math.round(tex.height / tex.frameCount) : tex.height) || 16) : clamp(Number($('height')?.value || 16), 1, 128);
-    const w = Math.round(width), h = Math.round(height);
-    if (!w || !h || w > 512 || h > 512) throw new Error('Tamanho inválido da textura.');
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    const ctx = c.getContext('2d', {willReadFrequently: true});
-    ctx.imageSmoothingEnabled = false;
-    if (tex) {
-      const img = tex.canvas && tex.canvas.width ? tex.canvas : tex.img;
-      if (!img || !img.width || !img.height) throw new Error('A textura selecionada ainda não carregou.');
-      // The source can already be an animated strip: always use the first frame only.
-      ctx.drawImage(img, 0, 0, Math.min(w, img.width), Math.min(h, img.height), 0, 0, w, h);
-    } else {
-      const fill = color($('base').value);
-      ctx.fillStyle = `rgb(${fill.join(',')})`;
-      ctx.fillRect(0, 0, w, h);
-    }
-    return {w, h, pixels: ctx.getImageData(0, 0, w, h).data, name: tex ? tex.name.replace(/\.png$/i, '') : 'pixel_art'};
+    if (!tex) throw new Error('Selecione uma textura na lista TEXTURES antes de abrir o estúdio.');
+    const img = tex.canvas && tex.canvas.width && tex.canvas.height ? tex.canvas : tex.img;
+    if (!img || !img.width || !img.height) throw new Error('A textura selecionada ainda não carregou.');
+    const iw = Math.round(img.width), ih = Math.round(img.height);
+    // Prefer actual image dimensions. Blockbench's UV height can be the complete
+    // strip height, especially with animated textures imported into BBModel.
+    const fw = iw;
+    const declaredFrames = Number(tex.frameCount || tex.frame_count || 0);
+    const uvh = Math.round(Number(tex.getUVHeight?.() || tex.uv_height || 0));
+    let fh = 0;
+    if (declaredFrames > 1 && ih % declaredFrames === 0) fh = ih / declaredFrames;
+    if (!fh && uvh > 0 && uvh < ih && ih % uvh === 0) fh = uvh;
+    if (!fh && ih > iw && ih % iw === 0) fh = iw;
+    if (!fh) fh = ih;
+    const count = Math.max(1, Math.floor(ih / fh));
+    if (fw < 1 || fh < 1 || fw > 512 || fh > 512) throw new Error('Dimensões inválidas de frame: ' + fw + ' × ' + fh);
+    const all = document.createElement('canvas');
+    all.width = fw; all.height = fh * count;
+    const allctx = all.getContext('2d', {willReadFrequently:true});
+    allctx.imageSmoothingEnabled = false;
+    allctx.drawImage(img, 0, 0, fw, fh * count, 0, 0, fw, fh * count);
+    const pixelsByFrame = [];
+    for (let n = 0; n < count; n++) pixelsByFrame.push(allctx.getImageData(0, n * fh, fw, fh).data);
+    return {w:fw, h:fh, pixels:pixelsByFrame[0], pixelsByFrame, inputFrames:count, texture:tex,
+      name:tex.name.replace(/\.png$/i,'')};
   }
   function readSettings() {
     return {
@@ -121,7 +128,10 @@
     // Deterministic glitter: no random flicker on re-render.
     const hash = (x,y,f) => {let n = Math.imul(x + 1231, 374761393) ^ Math.imul(y+7, 668265263) ^ Math.imul(f+19, 1442695041); n = Math.imul(n ^ n>>>13, 1274126177);return ((n ^ n>>>16)>>>0)/4294967295;};
     for (let f = 0; f < s.frames; f++) {
-      data.set(src.pixels);
+      // Keep every original animation frame: loop through the source frames instead
+      // of repeating only frame one over the entire output strip.
+      const originalFrame = src.pixelsByFrame[Math.floor(f * src.inputFrames / s.frames) % src.inputFrames];
+      data.set(originalFrame);
       const t0 = progress(f);
       let t = s.loop ? (1-Math.cos(2*Math.PI*f/s.frames))/2 : t0;
       t = ease(t, s.easing);
@@ -130,8 +140,8 @@
       const diagPos = -s.band*1.5 + t0*(src.h+src.w*0.8+3*s.band);
       for (let y=0;y<src.h;y++) for(let x=0;x<src.w;x++) {
         const p=(y*src.w+x)*4;
-        if (!src.pixels[p+3]) continue;
-        const original=[src.pixels[p],src.pixels[p+1],src.pixels[p+2]];
+        if (!originalFrame[p+3]) continue;
+        const original=[originalFrame[p],originalFrame[p+1],originalFrame[p+2]];
         const dist=Math.hypot(...original.map((v,i)=>v-s.a[i]));
         const selected = s.coverage === 'all' || s.mask === 'all' || dist <= s.tolerance;
         if (!selected) continue;
@@ -166,7 +176,7 @@
             let borders=0;
             for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
               const xx=x+dx,yy=y+dy;
-              if(xx<0||yy<0||xx>=src.w||yy>=src.h||!src.pixels[(yy*src.w+xx)*4+3]) borders++;
+              if(xx<0||yy<0||xx>=src.w||yy>=src.h||!originalFrame[(yy*src.w+xx)*4+3]) borders++;
             }
             strength = borders ? Math.pow(Math.sin(Math.PI*t0),2) : 0;
           }
@@ -311,7 +321,7 @@
         $('toltext').textContent = settings.tolerance;
         $('intensityText').textContent=Math.round(settings.intensity*100)+'%';
         $('bandText').textContent=settings.band;
-        $('dimension').textContent = `${src.w} × ${src.h} pixels/frame · PNG ${src.w} × ${src.h*settings.frames}`;
+        $('dimension').textContent = `${src.w} × ${src.h} por frame · ${src.inputFrames} frame(s) originais · ${settings.frames} exportados`;
         $('gradient').style.background = settings.loop ? `linear-gradient(90deg,${$('base').value},${$('target').value},${$('base').value})` : `linear-gradient(90deg,${$('base').value},${$('target').value})`;
         showFrame();
         if (runningTimer) clearInterval(runningTimer);
@@ -348,8 +358,8 @@
     $('create').addEventListener('click', () => {
       if (!strip) return message('Não há frames gerados.',true);
       try{
-        const tex=resolveTexture();
-        if(!tex)throw Error('Selecione uma textura em IMAGES primeiro.');
+        const tex=src.texture;
+        if(!tex || !Texture.all.includes(tex))throw Error('A textura original não está mais disponível.');
         tex.fromDataURL(strip.toDataURL('image/png'));
         tex.uv_width=src.w;tex.uv_height=src.h;
         tex.frame_time=Math.max(1,Math.round(20/settings.fps));
