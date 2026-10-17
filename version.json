@@ -1,5 +1,5 @@
 {
-  "version": "2.9.2",
+  "version": "2.9.3",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "Exibe a versão carregada nos títulos do plugin e orienta reinstalação manual quando o Blockbench não consegue recarregar automaticamente a instalação via URL."
+  "notes": "Corrige verificação de atualização desatualizada: consulta primeiro a API oficial de conteúdos do GitHub e usa manifesto raw como alternativa. Interface exibe a versão carregada."
 }
