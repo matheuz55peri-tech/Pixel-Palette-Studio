@@ -1,5 +1,5 @@
 {
-  "version": "2.6.5",
+  "version": "2.7.0",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "FPS reduzido até 0,1; prévia lenta e tempo de frame (ticks) atualizado no Minecraft sem mudar UV, resolução ou número de frames."
+  "notes": "Nova aba Gerador transparente, separada do editor: 8 animações procedurais sem fundo, prévia, zoom, cores, frames e FPS. Converte textura normal selecionada em flipbook; editor antigo preservado."
 }
