@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.3.1';
+  const CURRENT_VERSION = '2.4.0';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -155,6 +155,13 @@
             const edge = (x>0&&x<src.w-1&&y>0&&y<src.h-1) ? 1 : 0.5;
             strength=seed>0.89 ? Math.max(sparkle,active*0.14)*edge : 0;
           }
+
+          if(s.preset==='gold') {const wave=(Math.sin(x*0.52+y*0.26-2*Math.PI*t0)*0.5+0.5);const glint=hash(x,y,0)>0.92?Math.pow(Math.max(0,Math.sin(2*Math.PI*(t0+hash(x,y,1)))),8):0;strength=clamp(0.12+0.47*wave+0.66*glint,0,1);}
+          if(s.preset==='rune') {const glyph=((x*7+y*11)%13<3)||((x+2*y)%11===0);const scroll=(Math.sin((y+f*src.h/s.frames)*0.62+x*0.32)*0.5+0.5);strength=glyph?0.25+scroll*0.75:scroll*0.13;}
+          if(s.preset==='spectral') {const wave=Math.sin(2*Math.PI*t0*2-x*0.34-y*0.45);strength=Math.pow(Math.max(0,wave),1.7)*0.85+0.12;}
+          if(s.preset==='arcane') {const radial=Math.hypot((x+0.5-src.w/2)/Math.max(1,src.w),(y+0.5-src.h/2)/Math.max(1,src.h));const pulse=Math.pow(Math.max(0,Math.sin(2*Math.PI*t0*2-radial*8)),2);const motes=hash(x,y,0)>0.9?Math.pow(Math.max(0,Math.sin(2*Math.PI*(t0+hash(x,y,1)))),6):0;strength=clamp(pulse*0.68+motes*0.65,0,1);}
+          if(s.preset==='chromatic') {const phase=(t0+x/Math.max(1,src.w)*0.32+y/Math.max(1,src.h)*0.18)%1;const tint=[Math.round(150+105*(0.5+0.5*Math.sin(2*Math.PI*phase))),Math.round(75+110*(0.5+0.5*Math.sin(2*Math.PI*(phase+0.36)))),Math.round(150+105*(0.5+0.5*Math.sin(2*Math.PI*(phase+0.67))))];output=mixRGB(original,tint,Math.min(0.92,s.intensity*0.82));for(let i=0;i<3;i++)data[p+i]=output[i];continue;}
+          if(s.preset==='embers') {const hot=hash(x,y,0)>0.84;const phase=hash(x,y,1);const blink=Math.pow(Math.max(0,Math.sin(2*Math.PI*(t0+phase))),5);strength=hot?blink:0.08*Math.max(0,Math.sin(2*Math.PI*t0-y*0.35));}
           if(s.preset==='edge') {
             let borders=0;
             for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
@@ -182,7 +189,7 @@
   function launch(preset = 'vertical', texture = null) {
     stop();
     activeTexture = texture && typeof Texture !== 'undefined' && Texture.all?.includes(texture) ? texture : resolveTexture();
-    const presetNames = ['vertical','diagonal','horizontal','pulse','sparkle','edge','palette'];
+    const presetNames = ['vertical','diagonal','horizontal','pulse','sparkle','edge','palette','gold','rune','spectral','arcane','chromatic','embers'];
     if (!presetNames.includes(preset)) preset = 'vertical';
     const html = `
     <style>
@@ -210,9 +217,9 @@
       #ppf_root .twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
       #ppf_root .check{display:flex;gap:7px;align-items:center;font-size:12px;margin:9px 0}
       #ppf_root .check input{accent-color:#b583e7}
-      #ppf_root .preview{background:#151720;border:1px solid #45435a;border-radius:10px;min-height:205px;display:flex;justify-content:center;align-items:center;position:relative;overflow:hidden;background-image:linear-gradient(45deg,#262936 25%,transparent 25%),linear-gradient(-45deg,#262936 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#262936 75%),linear-gradient(-45deg,transparent 75%,#262936 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
-      #ppf_root canvas{image-rendering:pixelated;max-width:100%;max-height:220px;object-fit:contain;filter:drop-shadow(0 6px 9px #0007)}
-      #ppf_root .small{font-size:11px;opacity:.7;margin:9px 0 6px}
+      #ppf_root .preview{background:#151720;border:1px solid #45435a;border-radius:10px;min-height:205px;display:flex;justify-content:center;align-items:center;position:relative;overflow:auto;padding:12px;background-image:linear-gradient(45deg,#262936 25%,transparent 25%),linear-gradient(-45deg,#262936 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#262936 75%),linear-gradient(-45deg,transparent 75%,#262936 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+      #ppf_root canvas{display:block;image-rendering:pixelated;flex:none;filter:drop-shadow(0 6px 9px #0007)}
+      #ppf_root .zoomtools{display:flex;align-items:center;gap:8px;margin:10px 0 6px}#ppf_root .zoomtools button{flex:0 0 auto;padding:6px 10px}#ppf_root .zoomtools input{flex:1}#ppf_root .small{font-size:11px;opacity:.7;margin:9px 0 6px}
       #ppf_root .gradient{height:14px;border-radius:6px;border:1px solid #ffffff33;margin-top:8px}
       #ppf_root .buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
       #ppf_root button{background:#504060;color:white;border:1px solid #7f6890;border-radius:8px;padding:9px 12px;font-weight:bold;cursor:pointer;flex:1}
@@ -234,7 +241,13 @@
            <button class="preset" data-preset="edge" type="button"><b>◇</b>Contorno reluzente</button>
            <button class="preset" data-preset="palette" type="button"><b>◒</b>Troca de paleta</button>
           </div>
-          <input type="hidden" id="ppf_preset" value="vertical">
+          <div class="heading" style="margin-top:14px">Efeitos inspirados nas referências</div><div class="presets">
+<button class="preset" data-preset="gold" type="button"><b>✧</b>Ouro encantado</button>
+<button class="preset" data-preset="rune" type="button"><b>◎</b>Runas verdes</button>
+<button class="preset" data-preset="spectral" type="button"><b>❖</b>Gelo espectral</button>
+<button class="preset" data-preset="arcane" type="button"><b>✹</b>Pulso arcano</button>
+<button class="preset" data-preset="chromatic" type="button"><b>◈</b>Onda cromática</button>
+<button class="preset" data-preset="embers" type="button"><b>✺</b>Brasas mágicas</button></div><input type="hidden" id="ppf_preset" value="vertical">
           <div class="heading">02 / Aparência e movimento</div>
           <div class="twocol"><div class="field"><label for="ppf_glow">Cor do reflexo</label><input type="color" id="ppf_glow" value="#fff5e8"></div>
           <div class="field"><label for="ppf_intensity">Intensidade <span id="ppf_intensityText">85%</span></label><input type="range" id="ppf_intensity" min="0" max="100" value="85"></div></div>
@@ -257,17 +270,17 @@
           <label class="check"><input type="checkbox" id="ppf_shade" checked> Preservar relevo e diferenças de tons</label>
           <div class="heading" style="margin-top:16px">04 / Origem da textura</div>
           <div class="twocol"><div class="field"><label for="ppf_width">Largura</label><input id="ppf_width" type="number" min="1" max="128" value="16"></div><div class="field"><label for="ppf_height">Altura</label><input id="ppf_height" type="number" min="1" max="128" value="16"></div></div>
-          <span class="hint">Usa a textura escolhida em IMAGES ou a primeira textura disponível. A original não será alterada.</span>
+          <span class="hint">Usa a textura escolhida em IMAGES ou a primeira textura disponível. A textura selecionada será atualizada com os frames; salve um backup antes.</span>
         </section>
         <section class="panel">
           <div class="heading">Pré-visualização animada</div>
-          <div class="preview"><canvas id="ppf_canvas" width="16" height="16"></canvas></div>
+          <div class="preview"><canvas id="ppf_canvas" width="16" height="16"></canvas></div><div class="zoomtools"><span id="ppf_zoomLabel">8x</span><input id="ppf_zoom" type="range" min="1" max="32" value="8"><button type="button" id="ppf_zoomOut">−</button><button type="button" id="ppf_zoomIn">＋</button></div>
           <div class="small" id="ppf_frameLabel">Frame 1 / 16</div>
           <input type="range" id="ppf_scrub" min="0" max="15" value="0" aria-label="Visualizar frame manualmente">
           <div class="small">Paleta de transição</div><div id="ppf_gradient" class="gradient"></div>
           <div class="small" id="ppf_dimension">16 × 16 pixels</div><div class="progressinfo" id="ppf_effectdesc">A faixa luminosa atravessa os pixels de baixo para cima.</div>
           <div class="buttons"><button id="ppf_pause" type="button">⏸ Pausar</button><button id="ppf_png" type="button">Salvar PNG</button></div>
-          <div class="buttons"><button class="primary" id="ppf_create" type="button">✦ Criar textura no Blockbench</button></div>
+          <div class="buttons"><button class="primary" id="ppf_create" type="button">✦ Aplicar na textura selecionada</button></div>
           <div id="ppf_status" role="status">Pronto para gerar.</div>
         </section>
       </div>
@@ -276,13 +289,16 @@
     dialog.show();
     const initialPreset = $('preset');
     if (initialPreset) initialPreset.value = preset;
+    const presetColors={gold:'#ffe49b',rune:'#70ff9d',spectral:'#7ceaff',arcane:'#fa78ee',chromatic:'#e7a0ff',embers:'#ffa45b'};
+    if(presetColors[preset] && $('glow')) $('glow').value=presetColors[preset];
     document.querySelectorAll('#ppf_root .preset').forEach(el => el.classList.toggle('active', el.dataset.preset === preset));
-    const descriptionsInitial = {vertical:'A faixa clara percorre os pixels de baixo para cima.',diagonal:'Reflexo inclinado sobre a superfície.',horizontal:'A faixa atravessa da esquerda para a direita.',pulse:'O brilho aumenta e diminui.',sparkle:'Pontos brilhantes aparecem e desaparecem.',edge:'O contorno externo reluz.',palette:'Transição gradual entre duas cores.'};
+    const descriptionsInitial = {gold:'Cintilação dourada em ondas.',rune:'Runas verdes iluminadas.',spectral:'Faixas ciano em movimento.',arcane:'Pulso magenta e faíscas.',chromatic:'Ondas rosa, violeta e azul.',embers:'Brasas mágicas.',vertical:'A faixa clara percorre os pixels de baixo para cima.',diagonal:'Reflexo inclinado sobre a superfície.',horizontal:'A faixa atravessa da esquerda para a direita.',pulse:'O brilho aumenta e diminui.',sparkle:'Pontos brilhantes aparecem e desaparecem.',edge:'O contorno externo reluz.',palette:'Transição gradual entre duas cores.'};
     if ($('effectdesc')) $('effectdesc').textContent = descriptionsInitial[preset];
     let strip = null, src = null, settings = null, frame = 0, paused = false;
+    function applyZoom(){const c=$('canvas');if(!c)return;const z=clamp(Number($('zoom')?.value||8),1,32);c.style.width=((src?.w||16)*z)+'px';c.style.height=((src?.h||16)*z)+'px';$('zoomLabel').textContent=z+'x';}
     function showFrame() {
       if (!strip || !src || !settings || !$('canvas')) return;
-      frameAt(strip, frame, src.w, src.h, $('canvas'));
+      frameAt(strip, frame, src.w, src.h, $('canvas'));applyZoom();
       $('frameLabel').textContent = `Frame ${frame+1} / ${settings.frames}`;
       $('scrub').value = frame;
     }
@@ -307,15 +323,19 @@
     for (const id of ['base','target','frames','fps','tolerance','mask','ease','loop','shade','width','height','glow','intensity','band','coverage','reverse']) {
       const el = $(id); if (el) el.addEventListener('input', queueGenerate);
     }
-    const descriptions={vertical:'A faixa clara percorre a textura de baixo para cima.',diagonal:'Reflexo inclinado para criar o brilho de metal polido.',horizontal:'A luz percorre a textura da esquerda para a direita.',pulse:'A iluminação aumenta e diminui progressivamente.',sparkle:'Pontos brilhantes discretos aparecem e desaparecem.',edge:'O contorno externo reluz sem preencher o interior.',palette:'Transição gradual da cor inicial para a cor final.'};
+    const descriptions={gold:'Metal dourado cintilante.',rune:'Runas verdes pulsantes.',spectral:'Brilho espectral ciano.',arcane:'Descargas arcanas magenta.',chromatic:'Onda cromática.',embers:'Brasas em movimento.',vertical:'A faixa clara percorre a textura de baixo para cima.',diagonal:'Reflexo inclinado para criar o brilho de metal polido.',horizontal:'A luz percorre a textura da esquerda para a direita.',pulse:'A iluminação aumenta e diminui progressivamente.',sparkle:'Pontos brilhantes discretos aparecem e desaparecem.',edge:'O contorno externo reluz sem preencher o interior.',palette:'Transição gradual da cor inicial para a cor final.'};
     document.querySelectorAll('#ppf_root .preset').forEach(btn=>btn.addEventListener('click',()=>{
       $('preset').value=btn.dataset.preset;
       document.querySelectorAll('#ppf_root .preset').forEach(el=>el.classList.toggle('active',el===btn));
       $('effectdesc').textContent=descriptions[btn.dataset.preset];
+      if(presetColors[btn.dataset.preset])$('glow').value=presetColors[btn.dataset.preset];
       queueGenerate();
     }));
     $('pause').addEventListener('click', () => {paused=!paused;$('pause').textContent=paused?'▶ Reproduzir':'⏸ Pausar';});
     $('scrub').addEventListener('input', () => { paused=true; $('pause').textContent='▶ Reproduzir'; frame=Number($('scrub').value);showFrame(); });
+    $('zoom').addEventListener('input',applyZoom);
+    $('zoomIn').addEventListener('click',()=>{$('zoom').value=Math.min(32,Number($('zoom').value)+1);applyZoom();});
+    $('zoomOut').addEventListener('click',()=>{$('zoom').value=Math.max(1,Number($('zoom').value)-1);applyZoom();});
     $('png').addEventListener('click', () => {
       if (!strip) return message('Não foi possível gerar o PNG.', true);
       const filename = (src.name || 'pixel_art').replace(/[^\w-]/g, '_') + '_flipbook.png';
@@ -327,19 +347,20 @@
     });
     $('create').addEventListener('click', () => {
       if (!strip) return message('Não há frames gerados.',true);
-      try {
-        if (typeof Texture === 'undefined' || typeof Project === 'undefined' || !Project) throw new Error('Abra um projeto do Blockbench primeiro.');
-        const name=(src.name || 'pixel_art')+'_palette_flipbook';
-        const tex = new Texture({name: name+'.png', width:src.w,height:src.h*settings.frames});
+      try{
+        const tex=resolveTexture();
+        if(!tex)throw Error('Selecione uma textura em IMAGES primeiro.');
         tex.fromDataURL(strip.toDataURL('image/png'));
         tex.uv_width=src.w;tex.uv_height=src.h;
         tex.frame_time=Math.max(1,Math.round(20/settings.fps));
-        tex.frame_order_type='loop';
-        tex.frame_interpolate=false;
-        tex.add(true);
-        tex.select();
-        message(`Criada: ${name}.png (${settings.frames} frames; ${tex.frame_time} tick(s)/frame). Salve a textura no projeto.`);
-      } catch(e) {message('Falha ao criar textura: '+(e.message || e),true);}
+        tex.frame_order_type='loop';tex.frame_interpolate=false;
+        if('width' in tex)tex.width=src.w;
+        if('height' in tex)tex.height=src.h*settings.frames;
+        if(typeof tex.select==='function')tex.select();
+        if(typeof tex.updateMaterial==='function')tex.updateMaterial();
+        activeTexture=tex;
+        message('Atualizada a própria textura: '+tex.name+' ('+settings.frames+' frames). Salve o projeto.');
+      }catch(e){message('Erro ao aplicar na textura: '+e.message,true);}
     });
     generate();
   }
@@ -364,7 +385,14 @@
             {name:'Brilho pulsante', icon:'flare', click(texture) {launch('pulse', texture);}},
             {name:'Faíscas suaves', icon:'auto_awesome', click(texture) {launch('sparkle', texture);}},
             {name:'Contorno reluzente', icon:'border_outer', click(texture) {launch('edge', texture);}},
-            {name:'Transição de cores', icon:'gradient', click(texture) {launch('palette', texture);}}
+            {name:'Transição de cores', icon:'gradient', click(texture) {launch('palette', texture);}},
+            '_',
+            {name:'Ouro encantado', icon:'auto_awesome', click(texture) {launch('gold',texture);}},
+            {name:'Runas verdes', icon:'brightness_high', click(texture) {launch('rune',texture);}},
+            {name:'Gelo espectral', icon:'ac_unit', click(texture) {launch('spectral',texture);}},
+            {name:'Pulso arcano', icon:'flare', click(texture) {launch('arcane',texture);}},
+            {name:'Onda cromática', icon:'gradient', click(texture) {launch('chromatic',texture);}},
+            {name:'Brasas mágicas', icon:'whatshot', click(texture) {launch('embers',texture);}}
           ]
         };
         try {texMenu.addAction(textureContextAction);} catch(err){console.warn('[Pixel Palette Studio] Menu contextual indisponível:',err);}
