@@ -4,11 +4,13 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.9.6';
+  const CURRENT_VERSION = '2.9.7';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
   let checkedUpdates = false;
+  let updateDialogOpen = false;
+  const notifiedVersions = new Set();
   function compareVersions(a,b) {
     const aa=String(a).split('.').map(n=>parseInt(n,10)||0),bb=String(b).split('.').map(n=>parseInt(n,10)||0);
     for(let i=0;i<Math.max(aa.length,bb.length);i++) if((aa[i]||0)!==(bb[i]||0)) return (aa[i]||0)>(bb[i]||0)?1:-1;
@@ -37,12 +39,16 @@
         if(!silent)Blockbench.showMessageBox({title:'Pixel Palette Studio',message:'Você já está na versão mais recente ('+CURRENT_VERSION+').'});
         return;
       }
+      if(updateDialogOpen || notifiedVersions.has(data.version))return;
+      updateDialogOpen = true;
+      notifiedVersions.add(data.version);
       const plugin=typeof Plugins!=='undefined'&&Plugins.registered?Plugins.registered[PLUGIN_ID]:null;
       Blockbench.showMessageBox({
         title:'Pixel Palette Studio · atualização '+data.version,
         message:'Versão '+data.version+' disponível.\n'+String(data.notes||'').slice(0,400)+'\n\nOrigem: '+REPOSITORY+'\n\nDeseja atualizar agora?',
         buttons:['Atualizar agora','Depois']
       }, answer=>{
+        updateDialogOpen = false;
         if(answer!==0)return;
         try {
           if(plugin && plugin.source==='url' && typeof plugin.reload==='function') {
@@ -740,7 +746,8 @@
       }
       updateAction = new Action('ppf_check_updates',{name:'Pixel Palette Studio · Verificar atualizações',icon:'system_update_alt',click:()=>checkUpdates(false)});
       try {MenuBar.addAction(updateAction,'tools');}catch(e){console.warn(e);}
-      if(!checkedUpdates){checkedUpdates=true;setTimeout(()=>checkUpdates(true),3000);}
+      // Automatic modal checks are disabled: update only when user requests it.
+      checkedUpdates=true;
       menuAction = new Action('ppf_open_studio', {name:'Pixel Palette Studio',description:'Gerar flipbook de cores e ver animação ao vivo',icon:'auto_awesome',click:() => launch('vertical')});
       MenuBar.addAction(menuAction, 'tools');
     },
