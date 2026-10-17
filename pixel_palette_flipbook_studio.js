@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.4.1';
+  const CURRENT_VERSION = '2.5.0';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -172,6 +172,50 @@
           if(s.preset==='arcane') {const radial=Math.hypot((x+0.5-src.w/2)/Math.max(1,src.w),(y+0.5-src.h/2)/Math.max(1,src.h));const pulse=Math.pow(Math.max(0,Math.sin(2*Math.PI*t0*2-radial*8)),2);const motes=hash(x,y,0)>0.9?Math.pow(Math.max(0,Math.sin(2*Math.PI*(t0+hash(x,y,1)))),6):0;strength=clamp(pulse*0.68+motes*0.65,0,1);}
           if(s.preset==='chromatic') {const phase=(t0+x/Math.max(1,src.w)*0.32+y/Math.max(1,src.h)*0.18)%1;const tint=[Math.round(150+105*(0.5+0.5*Math.sin(2*Math.PI*phase))),Math.round(75+110*(0.5+0.5*Math.sin(2*Math.PI*(phase+0.36)))),Math.round(150+105*(0.5+0.5*Math.sin(2*Math.PI*(phase+0.67))))];output=mixRGB(original,tint,Math.min(0.92,s.intensity*0.82));for(let i=0;i<3;i++)data[p+i]=output[i];continue;}
           if(s.preset==='embers') {const hot=hash(x,y,0)>0.84;const phase=hash(x,y,1);const blink=Math.pow(Math.max(0,Math.sin(2*Math.PI*(t0+phase))),5);strength=hot?blink:0.08*Math.max(0,Math.sin(2*Math.PI*t0-y*0.35));}
+
+          // Procedural loops are independent of existing source frame count.
+          // Only recolors nontransparent source pixels.
+          if(s.preset==='petals') {
+            const u=x/Math.max(1,src.w),v=y/Math.max(1,src.h);
+            let ptl=0;
+            for(let k=0;k<8;k++){
+              const yy=(hash(k,8,0)+t0*(0.5+hash(k,4,0)*0.4))%1;
+              const xx=(hash(k,3,0)+t0*0.10+Math.sin(6.283*(yy+t0+hash(k,2,0)))*0.06+1)%1;
+              const dx=Math.min(Math.abs(u-xx),1-Math.abs(u-xx));
+              const dy=Math.min(Math.abs(v-yy),1-Math.abs(v-yy));
+              ptl=Math.max(ptl,Math.max(0,1-Math.hypot(dx,dy)/(0.026+hash(k,7,0)*0.033)));
+            }
+            strength=ptl;
+          }
+          if(s.preset==='fireflies'){
+            const u=x/Math.max(1,src.w),v=y/Math.max(1,src.h);
+            let gl=0;
+            for(let k=0;k<9;k++){
+              const px=(hash(k,9,0)+Math.sin(6.283*(t0+hash(k,1,0)))*0.08+1)%1;
+              const py=(hash(k,10,0)+Math.cos(6.283*(t0+hash(k,2,0)))*0.10+1)%1;
+              const blink=0.5+0.5*Math.sin(6.283*(t0+hash(k,4,0)));
+              const d=Math.hypot(u-px,v-py);
+              gl=Math.max(gl,Math.exp(-d*d/0.005)*blink);
+            }
+            strength=gl;
+          }
+          if(s.preset==='sunrays'){
+            const q=x*0.8+y*0.35;
+            const pos=-s.band*3+t0*(src.w*0.8+src.h*0.35+s.band*6);
+            strength=Math.max(0,1-Math.abs(q-pos)/Math.max(2,s.band*3))*0.88;
+          }
+          if(s.preset==='breeze'){
+            strength=Math.pow(Math.max(0,Math.sin((y/src.h*3-x/src.w*1.5-t0*2)*6.283)),2)*0.52;
+          }
+          if(s.preset==='lantern'){
+            const dx=(x-src.w*0.52)/Math.max(1,src.w),dy=(y-src.h*0.3)/Math.max(1,src.h);
+            const radial=Math.max(0,1-Math.hypot(dx,dy)*1.8);
+            strength=radial*(0.68+0.20*Math.sin(6.283*t0)+0.09*Math.sin(6.283*t0*3));
+          }
+          if(s.preset==='dew'){
+            const seed=hash(x,y,0);
+            strength=seed>0.90?Math.pow(Math.max(0,Math.sin(6.283*(t0+hash(x,y,1)))),8):0;
+          }
           if(s.preset==='edge') {
             let borders=0;
             for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
@@ -199,7 +243,7 @@
   function launch(preset = 'vertical', texture = null) {
     stop();
     activeTexture = texture && typeof Texture !== 'undefined' && Texture.all?.includes(texture) ? texture : resolveTexture();
-    const presetNames = ['vertical','diagonal','horizontal','pulse','sparkle','edge','palette','gold','rune','spectral','arcane','chromatic','embers'];
+    const presetNames = ['vertical','diagonal','horizontal','pulse','sparkle','edge','palette','gold','rune','spectral','arcane','chromatic','embers','petals','fireflies','sunrays','breeze','lantern','dew'];
     if (!presetNames.includes(preset)) preset = 'vertical';
     const html = `
     <style>
@@ -257,7 +301,14 @@
 <button class="preset" data-preset="spectral" type="button"><b>❖</b>Gelo espectral</button>
 <button class="preset" data-preset="arcane" type="button"><b>✹</b>Pulso arcano</button>
 <button class="preset" data-preset="chromatic" type="button"><b>◈</b>Onda cromática</button>
-<button class="preset" data-preset="embers" type="button"><b>✺</b>Brasas mágicas</button></div><input type="hidden" id="ppf_preset" value="vertical">
+<button class="preset" data-preset="embers" type="button"><b>✺</b>Brasas mágicas</button></div><div class="heading" style="margin-top:18px">03 / Animações automáticas</div><div class="progressinfo">Movimentos gerados automaticamente em frames. Personalize cor, intensidade, máscara, velocidade e número de frames.</div><div class="presets" id="ppf_autoPresets">
+<button class="preset" data-preset="petals" type="button"><b>❀</b>Pétalas ao vento</button>
+<button class="preset" data-preset="fireflies" type="button"><b>✦</b>Vagalumes</button>
+<button class="preset" data-preset="sunrays" type="button"><b>☀</b>Raios de sol</button>
+<button class="preset" data-preset="breeze" type="button"><b>≋</b>Brisa suave</button>
+<button class="preset" data-preset="lantern" type="button"><b>♨</b>Luz de lanterna</button>
+<button class="preset" data-preset="dew" type="button"><b>✧</b>Orvalho brilhante</button></div>
+<input type="hidden" id="ppf_preset" value="vertical">
           <div class="heading">02 / Aparência e movimento</div>
           <div class="twocol"><div class="field"><label for="ppf_glow">Cor do reflexo</label><input type="color" id="ppf_glow" value="#fff5e8"></div>
           <div class="field"><label for="ppf_intensity">Intensidade <span id="ppf_intensityText">85%</span></label><input type="range" id="ppf_intensity" min="0" max="100" value="85"></div></div>
@@ -299,10 +350,10 @@
     dialog.show();
     const initialPreset = $('preset');
     if (initialPreset) initialPreset.value = preset;
-    const presetColors={gold:'#ffe49b',rune:'#70ff9d',spectral:'#7ceaff',arcane:'#fa78ee',chromatic:'#e7a0ff',embers:'#ffa45b'};
+    const presetColors={petals:'#ffa5ca',fireflies:'#ecffa2',sunrays:'#fff1b0',breeze:'#9de8ff',lantern:'#ffca79',dew:'#e7faff',gold:'#ffe49b',rune:'#70ff9d',spectral:'#7ceaff',arcane:'#fa78ee',chromatic:'#e7a0ff',embers:'#ffa45b'};
     if(presetColors[preset] && $('glow')) $('glow').value=presetColors[preset];
     document.querySelectorAll('#ppf_root .preset').forEach(el => el.classList.toggle('active', el.dataset.preset === preset));
-    const descriptionsInitial = {gold:'Cintilação dourada em ondas.',rune:'Runas verdes iluminadas.',spectral:'Faixas ciano em movimento.',arcane:'Pulso magenta e faíscas.',chromatic:'Ondas rosa, violeta e azul.',embers:'Brasas mágicas.',vertical:'A faixa clara percorre os pixels de baixo para cima.',diagonal:'Reflexo inclinado sobre a superfície.',horizontal:'A faixa atravessa da esquerda para a direita.',pulse:'O brilho aumenta e diminui.',sparkle:'Pontos brilhantes aparecem e desaparecem.',edge:'O contorno externo reluz.',palette:'Transição gradual entre duas cores.'};
+    const descriptionsInitial = {petals:'Pétalas coloridas atravessam a textura.',fireflies:'Pontos luminosos flutuantes.',sunrays:'Faixas de sol atravessam a textura.',breeze:'Ondas translúcidas sugerem vento.',lantern:'Luz quente oscilante.',dew:'Reflexos de gotas cintilantes.',gold:'Cintilação dourada em ondas.',rune:'Runas verdes iluminadas.',spectral:'Faixas ciano em movimento.',arcane:'Pulso magenta e faíscas.',chromatic:'Ondas rosa, violeta e azul.',embers:'Brasas mágicas.',vertical:'A faixa clara percorre os pixels de baixo para cima.',diagonal:'Reflexo inclinado sobre a superfície.',horizontal:'A faixa atravessa da esquerda para a direita.',pulse:'O brilho aumenta e diminui.',sparkle:'Pontos brilhantes aparecem e desaparecem.',edge:'O contorno externo reluz.',palette:'Transição gradual entre duas cores.'};
     if ($('effectdesc')) $('effectdesc').textContent = descriptionsInitial[preset];
     let strip = null, src = null, settings = null, frame = 0, paused = false;
     function applyZoom(){const c=$('canvas');if(!c)return;const z=clamp(Number($('zoom')?.value||8),1,32);c.style.width=((src?.w||16)*z)+'px';c.style.height=((src?.h||16)*z)+'px';$('zoomLabel').textContent=z+'x';}
@@ -333,7 +384,7 @@
     for (const id of ['base','target','frames','fps','tolerance','mask','ease','loop','shade','width','height','glow','intensity','band','coverage','reverse']) {
       const el = $(id); if (el) el.addEventListener('input', queueGenerate);
     }
-    const descriptions={gold:'Metal dourado cintilante.',rune:'Runas verdes pulsantes.',spectral:'Brilho espectral ciano.',arcane:'Descargas arcanas magenta.',chromatic:'Onda cromática.',embers:'Brasas em movimento.',vertical:'A faixa clara percorre a textura de baixo para cima.',diagonal:'Reflexo inclinado para criar o brilho de metal polido.',horizontal:'A luz percorre a textura da esquerda para a direita.',pulse:'A iluminação aumenta e diminui progressivamente.',sparkle:'Pontos brilhantes discretos aparecem e desaparecem.',edge:'O contorno externo reluz sem preencher o interior.',palette:'Transição gradual da cor inicial para a cor final.'};
+    const descriptions={petals:'Pétalas atravessam a superfície.',fireflies:'Luzes flutuantes.',sunrays:'Raios de sol em movimento.',breeze:'Brisa suave.',lantern:'Luz quente oscilante.',dew:'Orvalho brilhante.',gold:'Metal dourado cintilante.',rune:'Runas verdes pulsantes.',spectral:'Brilho espectral ciano.',arcane:'Descargas arcanas magenta.',chromatic:'Onda cromática.',embers:'Brasas em movimento.',vertical:'A faixa clara percorre a textura de baixo para cima.',diagonal:'Reflexo inclinado para criar o brilho de metal polido.',horizontal:'A luz percorre a textura da esquerda para a direita.',pulse:'A iluminação aumenta e diminui progressivamente.',sparkle:'Pontos brilhantes discretos aparecem e desaparecem.',edge:'O contorno externo reluz sem preencher o interior.',palette:'Transição gradual da cor inicial para a cor final.'};
     document.querySelectorAll('#ppf_root .preset').forEach(btn=>btn.addEventListener('click',()=>{
       $('preset').value=btn.dataset.preset;
       document.querySelectorAll('#ppf_root .preset').forEach(el=>el.classList.toggle('active',el===btn));
