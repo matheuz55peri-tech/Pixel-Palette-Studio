@@ -1,5 +1,5 @@
 {
-  "version": "2.7.0",
+  "version": "2.8.0",
   "url": "https://raw.githubusercontent.com/matheuz55peri-tech/Pixel-Palette-Studio/main/pixel_palette_flipbook_studio.js",
-  "notes": "Nova aba Gerador transparente, separada do editor: 8 animações procedurais sem fundo, prévia, zoom, cores, frames e FPS. Converte textura normal selecionada em flipbook; editor antigo preservado."
+  "notes": "10 novos presets autorais inspirados em tutoriais e animações Pixilart: cinco efeitos no editor de textura e cinco animações novas no gerador transparente, mantendo ambas as abas separadas."
 }
