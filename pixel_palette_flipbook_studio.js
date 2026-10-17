@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const PLUGIN_ID = 'pixel_palette_flipbook_studio';
-  const CURRENT_VERSION = '2.7.0';
+  const CURRENT_VERSION = '2.8.0';
   const REPOSITORY = 'matheuz55peri-tech/Pixel-Palette-Studio';
   const RAW_BASE = 'https://raw.githubusercontent.com/' + REPOSITORY + '/main/';
   let updateAction = null;
@@ -228,6 +228,11 @@
             if(s.preset==='water_bubbles'){strength=0;for(let k=0;k<8;k++){const yy=1-((hash(k,5,0)+t0*0.67)%1),xx=(hash(k,6,0)+Math.sin(tau*(t0+hash(k,7,0)))*0.035+1)%1,d=Math.hypot(u-xx,v-yy);strength=Math.max(strength,Math.exp(-d*d/0.002));}}
             if(s.preset==='water_tide') strength=clamp(Math.pow(Math.max(0,Math.sin(tau*(v*1.5-t0))),2)*0.7+Math.pow(Math.max(0,Math.sin(tau*(u*1.1+v*0.65-t0))),2)*0.22,0,1);
           }
+          if(s.preset==='pix_fire') { const q=x/src.w*0.5+y/src.h*0.9-t0*2;strength=Math.max(0,Math.sin(Math.PI*2*q)+Math.sin(x*0.65-y*0.33+t0*Math.PI*6)*0.4)*0.55; }
+          if(s.preset==='pix_lightning') {const dx=Math.abs(x-src.w*(0.5+0.18*Math.sin(y*0.8+t0*Math.PI*2+Math.sin(y*1.5))));strength=clamp(Math.max(0,1-dx/Math.max(1,s.band*0.75))*0.95,0,1);}
+          if(s.preset==='pix_snow') {strength=(hash(x,y,0)>0.91?Math.pow(Math.max(0,Math.sin(Math.PI*2*(t0+hash(x,y,1)))),6):0)+Math.max(0,Math.sin(y*0.4+t0*Math.PI*2))*0.12;}
+          if(s.preset==='pix_twinkle') {strength=hash(x,y,0)>0.87?Math.pow(Math.max(0,Math.sin(Math.PI*2*(t0+hash(x,y,1)))),10):0;}
+          if(s.preset==='pix_shockwave') {const cx=src.w*0.5,cy=src.h*0.5,d=Math.hypot(x-cx,y-cy);strength=Math.max(0,1-Math.abs(d-((t0+0.05)%1)*Math.hypot(cx,cy))/Math.max(1,s.band));}
           if(s.preset==='edge') {
             let borders=0;
             for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
@@ -255,7 +260,7 @@
   function launch(preset = 'vertical', texture = null) {
     stop();
     activeTexture = texture && typeof Texture !== 'undefined' && Texture.all?.includes(texture) ? texture : resolveTexture();
-    const presetNames = ['vertical','diagonal','horizontal','pulse','sparkle','edge','palette','gold','rune','spectral','arcane','chromatic','embers','petals','fireflies','sunrays','breeze','lantern','dew','water_ripple','water_flow','water_fall','water_foam','water_caustic','water_rain','water_bubbles','water_tide'];
+    const presetNames = ['vertical','diagonal','horizontal','pulse','sparkle','edge','palette','gold','rune','spectral','arcane','chromatic','embers','petals','fireflies','sunrays','breeze','lantern','dew','water_ripple','water_flow','water_fall','water_foam','water_caustic','water_rain','water_bubbles','water_tide','pix_fire','pix_lightning','pix_snow','pix_twinkle','pix_shockwave'];
     if (!presetNames.includes(preset)) preset = 'vertical';
     const html = `
     <style>
@@ -321,7 +326,8 @@
 <button class="preset" data-preset="lantern" type="button"><b>♨</b>Luz de lanterna</button>
 <button class="preset" data-preset="dew" type="button"><b>✧</b>Orvalho brilhante</button></div>
 <div class="heading" style="margin-top:16px">04 / Pacote de Água</div><div class="progressinfo">Ondas, correntezas, espuma e reflexos. Mantém os pixels transparentes e os frames originais.</div><div class="presets">
-<button class="preset" data-preset="water_ripple" type="button"><b>≈</b>Ondulações</button><button class="preset" data-preset="water_flow" type="button"><b>↝</b>Correnteza</button><button class="preset" data-preset="water_fall" type="button"><b>⇊</b>Cachoeira</button><button class="preset" data-preset="water_foam" type="button"><b>✽</b>Espuma</button><button class="preset" data-preset="water_caustic" type="button"><b>⌇</b>Cáusticas</button><button class="preset" data-preset="water_rain" type="button"><b>◌</b>Chuva na água</button><button class="preset" data-preset="water_bubbles" type="button"><b>˚</b>Bolhas</button><button class="preset" data-preset="water_tide" type="button"><b>∿</b>Maré</button></div><input type="hidden" id="ppf_preset" value="vertical">
+<button class="preset" data-preset="water_ripple" type="button"><b>≈</b>Ondulações</button><button class="preset" data-preset="water_flow" type="button"><b>↝</b>Correnteza</button><button class="preset" data-preset="water_fall" type="button"><b>⇊</b>Cachoeira</button><button class="preset" data-preset="water_foam" type="button"><b>✽</b>Espuma</button><button class="preset" data-preset="water_caustic" type="button"><b>⌇</b>Cáusticas</button><button class="preset" data-preset="water_rain" type="button"><b>◌</b>Chuva na água</button><button class="preset" data-preset="water_bubbles" type="button"><b>˚</b>Bolhas</button><button class="preset" data-preset="water_tide" type="button"><b>∿</b>Maré</button></div><div class="heading" style="margin-top:16px">05 / Pixilart · Novas referências</div><div class="progressinfo">Efeitos de pixel art aplicados somente nas áreas já pintadas.</div><div class="presets">
+<button class="preset" type="button" data-preset="pix_fire"><b>♨</b>Chama oscilante</button><button class="preset" type="button" data-preset="pix_lightning"><b>ϟ</b>Energia elétrica</button><button class="preset" type="button" data-preset="pix_snow"><b>❄</b>Neve brilhante</button><button class="preset" type="button" data-preset="pix_twinkle"><b>✧</b>Cintilação estelar</button><button class="preset" type="button" data-preset="pix_shockwave"><b>◎</b>Pulso circular</button></div><input type="hidden" id="ppf_preset" value="vertical">
           <div class="heading">02 / Aparência e movimento</div>
           <div class="twocol"><div class="field"><label for="ppf_glow">Cor do reflexo</label><input type="color" id="ppf_glow" value="#fff5e8"></div>
           <div class="field"><label for="ppf_intensity">Intensidade <span id="ppf_intensityText">85%</span></label><input type="range" id="ppf_intensity" min="0" max="100" value="85"></div></div>
@@ -365,10 +371,10 @@
     document.getElementById('ppf_switchCreator')?.addEventListener('click',()=>{ dialog?.hide(); openTransparentGenerator(); });
     const initialPreset = $('preset');
     if (initialPreset) initialPreset.value = preset;
-    const presetColors={water_ripple:'#8fe7ff',water_flow:'#64d5ff',water_fall:'#d3f6ff',water_foam:'#ffffff',water_caustic:'#a4f6ff',water_rain:'#9fdcff',water_bubbles:'#d9fbff',water_tide:'#71cfff',petals:'#ffa5ca',fireflies:'#ecffa2',sunrays:'#fff1b0',breeze:'#9de8ff',lantern:'#ffca79',dew:'#e7faff',gold:'#ffe49b',rune:'#70ff9d',spectral:'#7ceaff',arcane:'#fa78ee',chromatic:'#e7a0ff',embers:'#ffa45b'};
+    const presetColors={pix_fire:'#ffac61',pix_lightning:'#bbd4ff',pix_snow:'#e2f6ff',pix_twinkle:'#f7e7ff',pix_shockwave:'#ffde9d',water_ripple:'#8fe7ff',water_flow:'#64d5ff',water_fall:'#d3f6ff',water_foam:'#ffffff',water_caustic:'#a4f6ff',water_rain:'#9fdcff',water_bubbles:'#d9fbff',water_tide:'#71cfff',petals:'#ffa5ca',fireflies:'#ecffa2',sunrays:'#fff1b0',breeze:'#9de8ff',lantern:'#ffca79',dew:'#e7faff',gold:'#ffe49b',rune:'#70ff9d',spectral:'#7ceaff',arcane:'#fa78ee',chromatic:'#e7a0ff',embers:'#ffa45b'};
     if(presetColors[preset] && $('glow')) $('glow').value=presetColors[preset];
     document.querySelectorAll('#ppf_root .preset').forEach(el => el.classList.toggle('active', el.dataset.preset === preset));
-    const descriptionsInitial = {water_ripple:'Ondulações iluminadas.',water_flow:'Correnteza deslizando pela textura.',water_fall:'Cachoeira com fluxo vertical.',water_foam:'Espuma nas cristas.',water_caustic:'Reflexos subaquáticos.',water_rain:'Anéis de chuva.',water_bubbles:'Bolhas ascendentes.',water_tide:'Maré em ondas amplas.',petals:'Pétalas coloridas atravessam a textura.',fireflies:'Pontos luminosos flutuantes.',sunrays:'Faixas de sol atravessam a textura.',breeze:'Ondas translúcidas sugerem vento.',lantern:'Luz quente oscilante.',dew:'Reflexos de gotas cintilantes.',gold:'Cintilação dourada em ondas.',rune:'Runas verdes iluminadas.',spectral:'Faixas ciano em movimento.',arcane:'Pulso magenta e faíscas.',chromatic:'Ondas rosa, violeta e azul.',embers:'Brasas mágicas.',vertical:'A faixa clara percorre os pixels de baixo para cima.',diagonal:'Reflexo inclinado sobre a superfície.',horizontal:'A faixa atravessa da esquerda para a direita.',pulse:'O brilho aumenta e diminui.',sparkle:'Pontos brilhantes aparecem e desaparecem.',edge:'O contorno externo reluz.',palette:'Transição gradual entre duas cores.'};
+    const descriptionsInitial = {pix_fire:'Luz de chama pulsante.',pix_lightning:'Descargas elétricas em movimento.',pix_snow:'Brilhos frios alternados.',pix_twinkle:'Cintilação de estrelas.',pix_shockwave:'Pulso de luz circular.',water_ripple:'Ondulações iluminadas.',water_flow:'Correnteza deslizando pela textura.',water_fall:'Cachoeira com fluxo vertical.',water_foam:'Espuma nas cristas.',water_caustic:'Reflexos subaquáticos.',water_rain:'Anéis de chuva.',water_bubbles:'Bolhas ascendentes.',water_tide:'Maré em ondas amplas.',petals:'Pétalas coloridas atravessam a textura.',fireflies:'Pontos luminosos flutuantes.',sunrays:'Faixas de sol atravessam a textura.',breeze:'Ondas translúcidas sugerem vento.',lantern:'Luz quente oscilante.',dew:'Reflexos de gotas cintilantes.',gold:'Cintilação dourada em ondas.',rune:'Runas verdes iluminadas.',spectral:'Faixas ciano em movimento.',arcane:'Pulso magenta e faíscas.',chromatic:'Ondas rosa, violeta e azul.',embers:'Brasas mágicas.',vertical:'A faixa clara percorre os pixels de baixo para cima.',diagonal:'Reflexo inclinado sobre a superfície.',horizontal:'A faixa atravessa da esquerda para a direita.',pulse:'O brilho aumenta e diminui.',sparkle:'Pontos brilhantes aparecem e desaparecem.',edge:'O contorno externo reluz.',palette:'Transição gradual entre duas cores.'};
     if ($('effectdesc')) $('effectdesc').textContent = descriptionsInitial[preset];
     let strip = null, src = null, settings = null, frame = 0, paused = false;
     function applyZoom(){const c=$('canvas');if(!c)return;const z=clamp(Number($('zoom')?.value||8),1,32);c.style.width=((src?.w||16)*z)+'px';c.style.height=((src?.h||16)*z)+'px';$('zoomLabel').textContent=z+'x';}
@@ -400,11 +406,12 @@
     for (const id of ['base','target','frames','fps','tolerance','mask','ease','loop','shade','width','height','glow','intensity','band','coverage','reverse']) {
       const el = $(id); if (el) el.addEventListener('input', queueGenerate);
     }
-    const descriptions={water_ripple:'Ondulações aquáticas.',water_flow:'Correnteza horizontal.',water_fall:'Queda de água.',water_foam:'Espuma costeira.',water_caustic:'Cáusticas luminosas.',water_rain:'Anéis de chuva.',water_bubbles:'Bolhas ascendentes.',water_tide:'Movimento da maré.',petals:'Pétalas atravessam a superfície.',fireflies:'Luzes flutuantes.',sunrays:'Raios de sol em movimento.',breeze:'Brisa suave.',lantern:'Luz quente oscilante.',dew:'Orvalho brilhante.',gold:'Metal dourado cintilante.',rune:'Runas verdes pulsantes.',spectral:'Brilho espectral ciano.',arcane:'Descargas arcanas magenta.',chromatic:'Onda cromática.',embers:'Brasas em movimento.',vertical:'A faixa clara percorre a textura de baixo para cima.',diagonal:'Reflexo inclinado para criar o brilho de metal polido.',horizontal:'A luz percorre a textura da esquerda para a direita.',pulse:'A iluminação aumenta e diminui progressivamente.',sparkle:'Pontos brilhantes discretos aparecem e desaparecem.',edge:'O contorno externo reluz sem preencher o interior.',palette:'Transição gradual da cor inicial para a cor final.'};
+    const descriptions={pix_fire:'Fogo cintilante.',pix_lightning:'Energia elétrica.',pix_snow:'Brilho de neve.',pix_twinkle:'Luzes estelares.',pix_shockwave:'Onda circular.',water_ripple:'Ondulações aquáticas.',water_flow:'Correnteza horizontal.',water_fall:'Queda de água.',water_foam:'Espuma costeira.',water_caustic:'Cáusticas luminosas.',water_rain:'Anéis de chuva.',water_bubbles:'Bolhas ascendentes.',water_tide:'Movimento da maré.',petals:'Pétalas atravessam a superfície.',fireflies:'Luzes flutuantes.',sunrays:'Raios de sol em movimento.',breeze:'Brisa suave.',lantern:'Luz quente oscilante.',dew:'Orvalho brilhante.',gold:'Metal dourado cintilante.',rune:'Runas verdes pulsantes.',spectral:'Brilho espectral ciano.',arcane:'Descargas arcanas magenta.',chromatic:'Onda cromática.',embers:'Brasas em movimento.',vertical:'A faixa clara percorre a textura de baixo para cima.',diagonal:'Reflexo inclinado para criar o brilho de metal polido.',horizontal:'A luz percorre a textura da esquerda para a direita.',pulse:'A iluminação aumenta e diminui progressivamente.',sparkle:'Pontos brilhantes discretos aparecem e desaparecem.',edge:'O contorno externo reluz sem preencher o interior.',palette:'Transição gradual da cor inicial para a cor final.'};
     document.querySelectorAll('#ppf_root .preset').forEach(btn=>btn.addEventListener('click',()=>{
       $('preset').value=btn.dataset.preset;
       document.querySelectorAll('#ppf_root .preset').forEach(el=>el.classList.toggle('active',el===btn));
       $('effectdesc').textContent=descriptions[btn.dataset.preset];
+      const pixColors={pix_fire:'#ffac61',pix_lightning:'#bbd4ff',pix_snow:'#e2f6ff',pix_twinkle:'#f7e7ff',pix_shockwave:'#ffde9d'};if(pixColors[btn.dataset.preset])$('glow').value=pixColors[btn.dataset.preset];
       const waterColors={water_ripple:'#8fe7ff',water_flow:'#64d5ff',water_fall:'#d3f6ff',water_foam:'#ffffff',water_caustic:'#a4f6ff',water_rain:'#9fdcff',water_bubbles:'#d9fbff',water_tide:'#71cfff',};if(waterColors[btn.dataset.preset])$('glow').value=waterColors[btn.dataset.preset];
       if(presetColors[btn.dataset.preset])$('glow').value=presetColors[btn.dataset.preset];
       queueGenerate();
@@ -513,7 +520,8 @@
     <button data-effect="petals" class="active">❀ Pétalas</button><button data-effect="leaves">❃ Folhas</button>
     <button data-effect="ripples">≈ Ondas</button><button data-effect="flow">↝ Correnteza</button>
     <button data-effect="waterfall">⇊ Cachoeira</button><button data-effect="foam">✽ Espuma</button>
-    <button data-effect="rain">◌ Chuva</button><button data-effect="bubbles">˚ Bolhas</button></div>
+    <button data-effect="rain">◌ Chuva</button><button data-effect="bubbles">˚ Bolhas</button>
+    <button data-effect="fire">♨ Chamas</button><button data-effect="snow">❄ Neve</button><button data-effect="sparks">✧ Faíscas</button><button data-effect="lightning">ϟ Raios</button><button data-effect="burst">◎ Pulso mágico</button></div>
     <div class="fields"><div><label>Cor principal</label><input id="ppfg_color1" type="color" value="#ff6ea8"></div><div><label>Cor secundária</label><input id="ppfg_color2" type="color" value="#ffd6e7"></div>
     <div><label>Largura por frame</label><input id="ppfg_w" type="number" min="1" max="128" value="32"></div><div><label>Altura por frame</label><input id="ppfg_h" type="number" min="1" max="128" value="32"></div>
     <div><label>Frames</label><input id="ppfg_frames" type="number" min="2" max="128" value="16"></div><div><label>Velocidade (FPS)</label><input id="ppfg_fps" type="number" min="0.1" max="20" step="0.1" value="4"></div>
@@ -556,6 +564,11 @@
           }else if(kind==='flow'||kind==='foam'){
             const y=phase*h;
             for(let xx=0;xx<w;xx+=2) dot(xx,y+Math.sin(xx/w*tau*2+t*tau)*cfg.size+oy,kind==='foam'?b:a,1);
+          }else if(kind==='fire'){const yy=h-1-phase*h;dot(x+Math.sin(tau*(t+rand(i,7)))*cfg.size,yy+oy,i%3?a:b,Math.max(1,cfg.size));
+          }else if(kind==='snow'){const yy=phase*h;dot(x+Math.sin(tau*(t+rand(i,11)))*cfg.size,yy+oy,i%3?a:b,1);
+          }else if(kind==='sparks'){const cx=w*.5,cy=h*.5,ang=rand(i,20)*tau,rad=phase*Math.min(w,h)*.47;dot(cx+Math.cos(ang)*rad,cy+Math.sin(ang)*rad+oy,i%2?a:b,1);
+          }else if(kind==='lightning'){const xx=w*(.5+.27*Math.sin(i*3.1+t*tau));for(let yy=0;yy<h;yy+=Math.max(1,Math.round(cfg.size))){dot(xx+Math.sin(yy*.6+t*tau)*cfg.size,yy+oy,i%3?a:b,1);}
+          }else if(kind==='burst'){const cx=w/2,cy=h/2,rr=phase*Math.min(w,h)*.46,ang=rand(i,6)*tau;dot(cx+Math.cos(ang)*rr,cy+Math.sin(ang)*rr+oy,i%3?a:b,1);
           }else if(kind==='waterfall'){
             const xx=rand(i,6)*w;
             for(let yy=0;yy<h;yy+=2)dot(xx+Math.sin(tau*t+yy*.08)*cfg.size,((yy+Math.floor(t*h))%h)+oy,i%3? a:b,1);
@@ -593,7 +606,7 @@
   }
 
   Plugin.register(PLUGIN_ID, {
-    title: 'Pixel Palette Studio — Flipbook FX 2.7.0',
+    title: 'Pixel Palette Studio — Flipbook FX 2.8.0',
     author: 'OpenAI',
     icon: 'auto_awesome',
     description: 'Presets de reflexos metálicos, brilho vertical, faíscas, paleta e prévia em flipbook.',
